@@ -74,9 +74,9 @@ Flags: `--port --name --min-players --no-bots --days --day-seconds --config`
 Server console: `help, say, list, kick, skip, givecash <name> <n>, days <n>, minplayers <n>, bots on|off, reload, quit`
 
 ## Modding
-Everything is JSON in `mods/`: gun parts (with box models), upgrades, customer types, zombie types, the town, the shop layout and night arenas. Gameplay scripting is Python. Players install nothing, because the server sends its content when they join. See **[MODDING.md](MODDING.md)** and `mods/example_mod`.
+Everything is JSON in `mods/`: gun parts (real gun models or box models), upgrades, customer types, zombie types, the town, the shop layout and night arenas. Gameplay scripting is Python. Players install nothing, because the server sends its content when they join. See **[MODDING.md](MODDING.md)** and `mods/example_mod`.
 
-Built with Python and [Panda3D](https://www.panda3d.org). Everything is made from boxes and synthesized sounds, so there are no asset files. An original game inspired by the gun-shop simulator genre.
+Built with Python and [Panda3D](https://www.panda3d.org), using free CC0 3D models (see Credits) and synthesized sounds. An original game inspired by the gun-shop simulator genre.
 
 ## Credits
 3D models: Quaternius (Zombie Apocalypse Kit, Ultimate Gun Pack) and Kenney (Furniture Kit), all CC0 / public domain. Licence files are in `mods/core/models/`. To rebuild the models from the original packs, put the zips in `assets_src/` and run `python tools/convert_assets.py` (needs `pip install panda3d-gltf`).

@@ -99,3 +99,12 @@ def on_match_end(api, winner)
 **player:** `name, cash, parts, guns, shelf, upgrades, stats, hp, alive, kills, zkills, speed_mul, damage_mul, data`.
 
 A crashing hook is logged and ignored.
+
+## 3D models
+Put models in `mods/<your_mod>/models/` as `.bam`, `.gltf`/`.glb` or `.obj`, and refer to them by path without the extension (e.g. `props/MyCrate`). The core models came from free CC0 packs and were converted with `tools/convert_assets.py`.
+- **Gun receivers:** `"meshes": ["AssaultRifle_1", "AssaultRifle_2"]` uses real gun models from `models/guns/`. The barrel, magazine and stock pick which variant shows, while the scope, muzzle, grip and bayonet still attach visibly. `"meshScale"` and `"tint"` are optional.
+- **Zombies:** `"mesh": "zombies/basic"` (animated: Walk, Run_Arms, Idle_Attack, Death).
+- **Props** (in towns, shops, arenas and shop decor levels): `{"mesh": "props/Barrel", "x": 10, "y": 5, "z": 0, "h": 90, "s": 1.0, "tint": "#ffffff", "collide": [0.7, 0.7, 1.1]}`. `collide` adds a solid box that the server also uses.
+- **Boxes:** add `"mesh"` to show a model stretched to fill the box (e.g. containers), or `"invisible": true` to keep only the collision.
+
+If a player is missing a model that a server references, the game draws the box version instead, so nothing breaks.
