@@ -9,7 +9,7 @@
  "skyColor": "#101624",
  "fogColor": "#1a2234",
  "lightColor": "#a8baff",
- "ambient": "#3e4660",
+ "ambient": "#505a76",
  "boxes": [
   {
    "x": -1,
@@ -300,5 +300,5 @@
    26
   ]
  ],
- "fogDensity": 0.03
+ "fogDensity": 0.022
 }

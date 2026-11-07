@@ -111,6 +111,7 @@ def run(root, extra_prc=""):
             G.shader_auto(self.render)
             self.render.setAntialias(AntialiasAttrib.MMultisample)
             self.camLens.setFov(self.settings["fov"])
+            self.camLens.setNearFar(0.05, 450)
             self.font = self.font3d = None
             for path in FONT_CANDIDATES:
                 if os.path.isfile(path):

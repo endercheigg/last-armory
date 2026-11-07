@@ -10,7 +10,7 @@
  "skyColor": "#a9c3d9",
  "fogColor": "#b9c9d6",
  "lightColor": "#fff2dc",
- "ambient": "#7a8090",
+ "ambient": "#8a90a0",
  "boxes": [
   {
    "x": -1,
@@ -301,7 +301,7 @@
    "z": 0,
    "w": 112,
    "d": 12,
-   "h": 0.02,
+   "h": 0.05,
    "color": "#6a6052"
   }
  ]

@@ -3,7 +3,7 @@ import math
 import random
 import time
 
-from panda3d.core import (AmbientLight, Camera, DirectionalLight, Fog, KeyboardButton, MouseButton, NodePath,
+from panda3d.core import (CullFaceAttrib, RenderState, AmbientLight, Camera, DirectionalLight, Fog, KeyboardButton, MouseButton, NodePath,
                           PerspectiveLens, Point3, PointLight, Spotlight, TextureStage, TransparencyAttrib, Vec3)
 
 from ..sim import EYE_H, aim_vec, box_tuple, move_player, ray_world
@@ -39,9 +39,12 @@ def make_lights(root, sun_hex="#fff0dc", amb_hex="#5a6070", film=80, shadows=Tru
     c = hexc(sun_hex)
     sun.setColor((c[0] * 1.1, c[1] * 1.1, c[2] * 1.1, 1))
     if shadows:
-        sun.setShadowCaster(True, 2048, 2048)
+        res = 4096 if film > 60 else 2048
+        sun.setShadowCaster(True, res, res)
         sun.getLens().setFilmSize(film, film)
-        sun.getLens().setNearFar(1, 220)
+        sun.getLens().setNearFar(-120, 120)
+        # render back faces into the shadow map: removes the striped "shadow acne" on lit surfaces
+        sun.setInitialState(RenderState.make(CullFaceAttrib.makeReverse()))
     sun_np = root.attachNewNode(sun)
     sun_np.setHpr(35, -55, 0)
     root.setLight(amb_np)
@@ -201,7 +204,7 @@ class FPSView:
         fog.setExpDensity(fog_density)
         app.render.setFog(fog)
         W, D = size
-        self.sun, self.amb = make_lights(self.root, light, ambient, film=max(W, D) * 1.2)
+        self.sun, self.amb = make_lights(self.root, light, ambient, film=min(90, max(W, D) * 1.2))
         self.sun.setPos(W / 2, D / 2, 0)
         g = box(self.static, (W / 2, D / 2, -0.25), (W + ground_extra * 2, D + ground_extra * 2, 0.5), hexc(ground_color))
         g.setTexture(grid_texture(cells=2, line=0.9))
@@ -252,7 +255,7 @@ class FPSView:
         self.vm_muzzle = (0, 0.3, 0)
         self.vm_flash = None
         self.vm_flash_t = 0.0
-        app.camLens.setNear(0.05)
+        app.camLens.setNearFar(0.05, 450)  # a sane depth range stops distant surfaces flickering
 
     # -------------------------------------------------- state
     def teleport(self, m):
@@ -785,7 +788,8 @@ class TownView(FPSView):
             plots = self.world["plots"]
             near = min(plots, key=lambda p: (p["center"][0] - self.render_pos.x) ** 2 + (p["center"][1] - self.render_pos.y) ** 2)
             self.interior_np.setPos(near["center"][0], near["center"][1], 3.0)
-            self.sun.setPos(self.render_pos.x, self.render_pos.y, 0)
+            # move the shadow area in 6 m steps (no shimmering while walking)
+            self.sun.setPos(round(self.render_pos.x / 6) * 6, round(self.render_pos.y / 6) * 6, 0)
         self.prompt_obj = None
         if self.controls_enabled():
             o = self.find_object()
