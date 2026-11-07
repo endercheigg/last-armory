@@ -1,0 +1,7 @@
+userdata/
+dist/
+build/
+.buildenv/
+__pycache__/
+*.spec
+server_config.json

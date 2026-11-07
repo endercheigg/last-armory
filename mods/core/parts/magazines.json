@@ -1,0 +1,172 @@
+[
+ {
+  "id": "mag_pistol",
+  "slot": "magazine",
+  "name": "Pistol Mag",
+  "tier": 0,
+  "description": "Standard issue.",
+  "start": true,
+  "mul": {},
+  "model": [
+   {
+    "p": [
+     0,
+     0,
+     -0.03
+    ],
+    "s": [
+     0.035,
+     0.04,
+     0.05
+    ],
+    "c": "#2b2e33"
+   }
+  ]
+ },
+ {
+  "id": "mag_ext",
+  "slot": "magazine",
+  "name": "Extended Mag",
+  "tier": 1,
+  "description": "+60% ammo.",
+  "start": false,
+  "mul": {
+   "magSize": 1.6,
+   "reloadTime": 1.15
+  },
+  "model": [
+   {
+    "p": [
+     0,
+     0,
+     -0.09
+    ],
+    "s": [
+     0.035,
+     0.05,
+     0.18
+    ],
+    "c": "#2b2e33"
+   }
+  ]
+ },
+ {
+  "id": "mag_quick",
+  "slot": "magazine",
+  "name": "Quick Mag",
+  "tier": 2,
+  "description": "Reloads in a flash.",
+  "start": false,
+  "mul": {
+   "reloadTime": 0.6
+  },
+  "model": [
+   {
+    "p": [
+     0,
+     0,
+     -0.06
+    ],
+    "s": [
+     0.035,
+     0.05,
+     0.12
+    ],
+    "c": "#2b2e33"
+   },
+   {
+    "p": [
+     0,
+     0,
+     -0.125
+    ],
+    "s": [
+     0.04,
+     0.055,
+     0.015
+    ],
+    "c": "#e8892b"
+   }
+  ]
+ },
+ {
+  "id": "mag_drum",
+  "slot": "magazine",
+  "name": "Drum Mag",
+  "tier": 3,
+  "description": "Huge capacity.",
+  "start": false,
+  "mul": {
+   "magSize": 2.5,
+   "reloadTime": 1.5
+  },
+  "model": [
+   {
+    "p": [
+     0,
+     0,
+     -0.03
+    ],
+    "s": [
+     0.035,
+     0.04,
+     0.06
+    ],
+    "c": "#2b2e33"
+   },
+   {
+    "p": [
+     0,
+     0,
+     -0.1
+    ],
+    "s": [
+     0.07,
+     0.11,
+     0.11
+    ],
+    "c": "#2b2e33"
+   }
+  ]
+ },
+ {
+  "id": "mag_belt",
+  "slot": "magazine",
+  "name": "Ammo Box",
+  "tier": 4,
+  "description": "Practically endless.",
+  "start": false,
+  "mul": {
+   "magSize": 3,
+   "reloadTime": 1.2
+  },
+  "model": [
+   {
+    "p": [
+     0,
+     0,
+     -0.07
+    ],
+    "s": [
+     0.12,
+     0.1,
+     0.12
+    ],
+    "c": "#4b5a3a"
+   },
+   {
+    "p": [
+     0.06,
+     0,
+     0.01
+    ],
+    "s": [
+     0.02,
+     0.03,
+     0.08
+    ],
+    "c": "#b08d3a"
+   }
+  ]
+ }
+]

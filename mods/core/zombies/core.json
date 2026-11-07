@@ -1,0 +1,35 @@
+[
+ {
+  "id": "walker",
+  "name": "Walker",
+  "hp": 60,
+  "speed": 2.6,
+  "damage": 10,
+  "reward": 15,
+  "weight": 10,
+  "color": "#6b8f4e"
+ },
+ {
+  "id": "runner",
+  "name": "Runner",
+  "hp": 40,
+  "speed": 5.2,
+  "damage": 8,
+  "reward": 20,
+  "weight": 5,
+  "minDay": 2,
+  "color": "#8f8a4e"
+ },
+ {
+  "id": "brute",
+  "name": "Brute",
+  "hp": 260,
+  "speed": 2.1,
+  "damage": 28,
+  "reward": 60,
+  "weight": 2,
+  "minDay": 3,
+  "color": "#4e6b5f",
+  "scale": 1.35
+ }
+]

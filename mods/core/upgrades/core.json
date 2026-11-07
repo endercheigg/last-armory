@@ -1,0 +1,117 @@
+[
+ {
+  "id": "racks",
+  "name": "Display Racks",
+  "description": "More shelf space for guns.",
+  "levels": [
+   {
+    "cost": 150,
+    "effects": {
+     "shelves": 2
+    }
+   },
+   {
+    "cost": 350,
+    "effects": {
+     "shelves": 2
+    }
+   },
+   {
+    "cost": 650,
+    "effects": {
+     "shelves": 1
+    }
+   }
+  ]
+ },
+ {
+  "id": "decor",
+  "name": "Cozy Decor",
+  "description": "Plants, rugs and lights. Customers love it.",
+  "levels": [
+   {
+    "cost": 120,
+    "effects": {
+     "attract": 1
+    }
+   },
+   {
+    "cost": 300,
+    "effects": {
+     "attract": 1
+    }
+   },
+   {
+    "cost": 600,
+    "effects": {
+     "attract": 1
+    }
+   }
+  ]
+ },
+ {
+  "id": "sign",
+  "name": "Shop Sign",
+  "description": "Pulls in more passers-by.",
+  "levels": [
+   {
+    "cost": 200,
+    "effects": {
+     "signs": 1
+    }
+   },
+   {
+    "cost": 500,
+    "effects": {
+     "signs": 1
+    }
+   }
+  ]
+ },
+ {
+  "id": "workbench",
+  "name": "Pro Workbench",
+  "description": "Lv1: disassemble guns + bigger supplier stock. Lv2: 15% supplier discount.",
+  "levels": [
+   {
+    "cost": 250,
+    "effects": {
+     "disassemble": 1,
+     "stock": 1
+    }
+   },
+   {
+    "cost": 600,
+    "effects": {
+     "discount": 15,
+     "stock": 2
+    }
+   }
+  ]
+ },
+ {
+  "id": "armor",
+  "name": "Night Armor",
+  "description": "More health for the night raid.",
+  "levels": [
+   {
+    "cost": 200,
+    "effects": {
+     "maxHp": 25
+    }
+   },
+   {
+    "cost": 450,
+    "effects": {
+     "maxHp": 35
+    }
+   },
+   {
+    "cost": 900,
+    "effects": {
+     "maxHp": 50
+    }
+   }
+  ]
+ }
+]

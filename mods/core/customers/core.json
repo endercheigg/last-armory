@@ -1,0 +1,66 @@
+[
+ {
+  "id": "dps",
+  "label": "BIG DAMAGE",
+  "stat": "dps",
+  "ref": 110,
+  "weight": 12
+ },
+ {
+  "id": "range",
+  "label": "LONG RANGE",
+  "stat": "range",
+  "ref": 55,
+  "weight": 10
+ },
+ {
+  "id": "rate",
+  "label": "FAST FIRING",
+  "stat": "fireRate",
+  "ref": 8,
+  "weight": 10
+ },
+ {
+  "id": "accuracy",
+  "label": "ACCURACY",
+  "stat": "spread",
+  "ref": 2.0,
+  "lower": true,
+  "weight": 9
+ },
+ {
+  "id": "mag",
+  "label": "BIG MAGAZINE",
+  "stat": "magSize",
+  "ref": 30,
+  "weight": 8
+ },
+ {
+  "id": "punch",
+  "label": "ONE-SHOT POWER",
+  "stat": "damage",
+  "ref": 40,
+  "weight": 7
+ },
+ {
+  "id": "light",
+  "label": "SOMETHING LIGHT",
+  "stat": "moveSpeed",
+  "ref": 1.0,
+  "weight": 6
+ },
+ {
+  "id": "scope",
+  "label": "A GOOD SCOPE",
+  "stat": "zoom",
+  "ref": 2.2,
+  "weight": 5
+ },
+ {
+  "id": "blade",
+  "label": "A BAYONET",
+  "stat": "melee",
+  "ref": 45,
+  "weight": 4
+ }
+]

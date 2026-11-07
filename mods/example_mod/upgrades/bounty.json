@@ -1,0 +1,4 @@
+[
+  { "id": "ex_bounty", "name": "Bounty Board", "description": "Earn +$10 extra per zombie per level (custom effect read by server.py).",
+    "levels": [ { "cost": 180, "effects": { "zombieBounty": 10 } }, { "cost": 400, "effects": { "zombieBounty": 10 } } ] }
+]

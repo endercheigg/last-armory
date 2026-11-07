@@ -1,0 +1,664 @@
+[
+ {
+  "id": "stk_light",
+  "slot": "stock",
+  "name": "Light Stock",
+  "tier": 1,
+  "description": "Barely there. Move faster.",
+  "mul": {
+   "recoil": 0.75
+  },
+  "model": [
+   {
+    "p": [
+     0,
+     -0.12,
+     -0.01
+    ],
+    "s": [
+     0.02,
+     0.24,
+     0.02
+    ],
+    "c": "#1d1f23"
+   },
+   {
+    "p": [
+     0,
+     -0.24,
+     -0.04
+    ],
+    "s": [
+     0.03,
+     0.02,
+     0.09
+    ],
+    "c": "#1d1f23"
+   }
+  ],
+  "add": {
+   "moveSpeed": 0.04
+  }
+ },
+ {
+  "id": "stk_tactical",
+  "slot": "stock",
+  "name": "Tactical Stock",
+  "tier": 2,
+  "description": "Steady and accurate.",
+  "mul": {
+   "recoil": 0.55,
+   "spread": 0.85
+  },
+  "model": [
+   {
+    "p": [
+     0,
+     -0.13,
+     -0.02
+    ],
+    "s": [
+     0.045,
+     0.26,
+     0.07
+    ],
+    "c": "#2b2e33"
+   },
+   {
+    "p": [
+     0,
+     -0.27,
+     -0.03
+    ],
+    "s": [
+     0.05,
+     0.03,
+     0.11
+    ],
+    "c": "#1d1f23"
+   }
+  ]
+ },
+ {
+  "id": "stk_heavy",
+  "slot": "stock",
+  "name": "Heavy Stock",
+  "tier": 3,
+  "description": "Rock solid, a little heavy.",
+  "mul": {
+   "recoil": 0.35,
+   "spread": 0.75,
+   "moveSpeed": 0.95
+  },
+  "model": [
+   {
+    "p": [
+     0,
+     -0.15,
+     -0.025
+    ],
+    "s": [
+     0.055,
+     0.3,
+     0.09
+    ],
+    "c": "#7a4b2a"
+   },
+   {
+    "p": [
+     0,
+     -0.31,
+     -0.03
+    ],
+    "s": [
+     0.06,
+     0.03,
+     0.12
+    ],
+    "c": "#1d1f23"
+   }
+  ]
+ },
+ {
+  "id": "sgt_reflex",
+  "slot": "sight",
+  "name": "Reflex Sight",
+  "tier": 1,
+  "description": "Better accuracy.",
+  "mul": {
+   "spread": 0.85
+  },
+  "model": [
+   {
+    "p": [
+     0,
+     0,
+     0.02
+    ],
+    "s": [
+     0.035,
+     0.04,
+     0.04
+    ],
+    "c": "#1d1f23"
+   },
+   {
+    "p": [
+     0,
+     0.005,
+     0.03
+    ],
+    "s": [
+     0.01,
+     0.005,
+     0.01
+    ],
+    "c": "#ff3b3b"
+   }
+  ],
+  "add": {
+   "zoom": 0.3
+  }
+ },
+ {
+  "id": "sgt_holo",
+  "slot": "sight",
+  "name": "Holo Sight",
+  "tier": 2,
+  "description": "Clean picture, more zoom.",
+  "mul": {
+   "spread": 0.75
+  },
+  "model": [
+   {
+    "p": [
+     0,
+     0,
+     0.025
+    ],
+    "s": [
+     0.05,
+     0.07,
+     0.05
+    ],
+    "c": "#1d1f23"
+   },
+   {
+    "p": [
+     0,
+     0.01,
+     0.03
+    ],
+    "s": [
+     0.03,
+     0.005,
+     0.025
+    ],
+    "c": "#3fd0ff"
+   }
+  ],
+  "add": {
+   "zoom": 0.6
+  }
+ },
+ {
+  "id": "sgt_scope",
+  "slot": "sight",
+  "name": "Long Scope",
+  "tier": 3,
+  "description": "Big zoom (right-click).",
+  "mul": {
+   "spread": 0.6
+  },
+  "model": [
+   {
+    "p": [
+     0,
+     0,
+     0.035
+    ],
+    "s": [
+     0.04,
+     0.22,
+     0.04
+    ],
+    "c": "#1d1f23"
+   },
+   {
+    "p": [
+     0,
+     -0.1,
+     0.035
+    ],
+    "s": [
+     0.05,
+     0.03,
+     0.05
+    ],
+    "c": "#1d1f23"
+   },
+   {
+    "p": [
+     0,
+     0.1,
+     0.035
+    ],
+    "s": [
+     0.05,
+     0.03,
+     0.05
+    ],
+    "c": "#1d1f23"
+   },
+   {
+    "p": [
+     0,
+     0,
+     0.01
+    ],
+    "s": [
+     0.02,
+     0.04,
+     0.02
+    ],
+    "c": "#4a4f57"
+   }
+  ],
+  "add": {
+   "zoom": 2.0
+  }
+ },
+ {
+  "id": "mzl_comp",
+  "slot": "muzzle",
+  "name": "Compensator",
+  "tier": 1,
+  "description": "Less kick.",
+  "mul": {
+   "recoil": 0.7
+  },
+  "model": [
+   {
+    "p": [
+     0,
+     0.03,
+     0
+    ],
+    "s": [
+     0.045,
+     0.06,
+     0.045
+    ],
+    "c": "#4a4f57"
+   }
+  ]
+ },
+ {
+  "id": "mzl_brake",
+  "slot": "muzzle",
+  "name": "Muzzle Brake",
+  "tier": 2,
+  "description": "Tighter shots.",
+  "mul": {
+   "spread": 0.8,
+   "recoil": 0.8
+  },
+  "model": [
+   {
+    "p": [
+     0,
+     0.035,
+     0
+    ],
+    "s": [
+     0.055,
+     0.07,
+     0.04
+    ],
+    "c": "#2e3238"
+   },
+   {
+    "p": [
+     0,
+     0.03,
+     0
+    ],
+    "s": [
+     0.06,
+     0.01,
+     0.045
+    ],
+    "c": "#111111"
+   }
+  ]
+ },
+ {
+  "id": "mzl_suppressor",
+  "slot": "muzzle",
+  "name": "Suppressor",
+  "tier": 2,
+  "description": "Steady and long.",
+  "mul": {
+   "spread": 0.85,
+   "damage": 0.95,
+   "range": 1.1
+  },
+  "model": [
+   {
+    "p": [
+     0,
+     0.09,
+     0
+    ],
+    "s": [
+     0.045,
+     0.18,
+     0.045
+    ],
+    "c": "#1d1f23"
+   }
+  ]
+ },
+ {
+  "id": "mzl_booster",
+  "slot": "muzzle",
+  "name": "Rate Booster",
+  "tier": 3,
+  "description": "Cycles faster.",
+  "mul": {
+   "fireRate": 1.12
+  },
+  "model": [
+   {
+    "p": [
+     0,
+     0.04,
+     0
+    ],
+    "s": [
+     0.05,
+     0.08,
+     0.05
+    ],
+    "c": "#e8892b"
+   },
+   {
+    "p": [
+     0,
+     0.04,
+     0
+    ],
+    "s": [
+     0.06,
+     0.02,
+     0.06
+    ],
+    "c": "#1d1f23"
+   }
+  ]
+ },
+ {
+  "id": "mzl_choke",
+  "slot": "muzzle",
+  "name": "Choke",
+  "tier": 2,
+  "description": "Great on shotguns.",
+  "mul": {
+   "spread": 0.6
+  },
+  "model": [
+   {
+    "p": [
+     0,
+     0.025,
+     0
+    ],
+    "s": [
+     0.05,
+     0.05,
+     0.05
+    ],
+    "c": "#5b5f66"
+   }
+  ]
+ },
+ {
+  "id": "grp_vertical",
+  "slot": "grip",
+  "name": "Vertical Grip",
+  "tier": 1,
+  "description": "Steadier hands.",
+  "mul": {
+   "recoil": 0.8,
+   "spread": 0.92
+  },
+  "model": [
+   {
+    "p": [
+     0,
+     0,
+     -0.045
+    ],
+    "s": [
+     0.03,
+     0.03,
+     0.09
+    ],
+    "c": "#1d1f23"
+   }
+  ]
+ },
+ {
+  "id": "grp_angled",
+  "slot": "grip",
+  "name": "Angled Grip",
+  "tier": 2,
+  "description": "Smooth handling.",
+  "mul": {
+   "recoil": 0.7
+  },
+  "model": [
+   {
+    "p": [
+     0,
+     0.02,
+     -0.03
+    ],
+    "s": [
+     0.03,
+     0.08,
+     0.05
+    ],
+    "c": "#1d1f23"
+   },
+   {
+    "p": [
+     0,
+     0.05,
+     -0.06
+    ],
+    "s": [
+     0.03,
+     0.03,
+     0.04
+    ],
+    "c": "#1d1f23"
+   }
+  ],
+  "add": {
+   "moveSpeed": 0.02
+  }
+ },
+ {
+  "id": "grp_bipod",
+  "slot": "grip",
+  "name": "Heavy Bipod",
+  "tier": 3,
+  "description": "Rock steady. A bit heavy.",
+  "mul": {
+   "recoil": 0.45,
+   "spread": 0.8,
+   "moveSpeed": 0.95
+  },
+  "model": [
+   {
+    "p": [
+     0.025,
+     0.01,
+     -0.07
+    ],
+    "s": [
+     0.012,
+     0.012,
+     0.14
+    ],
+    "c": "#4a4f57"
+   },
+   {
+    "p": [
+     -0.025,
+     0.01,
+     -0.07
+    ],
+    "s": [
+     0.012,
+     0.012,
+     0.14
+    ],
+    "c": "#4a4f57"
+   },
+   {
+    "p": [
+     0,
+     0,
+     -0.01
+    ],
+    "s": [
+     0.07,
+     0.03,
+     0.02
+    ],
+    "c": "#1d1f23"
+   }
+  ]
+ },
+ {
+  "id": "bay_knife",
+  "slot": "bayonet",
+  "name": "Combat Knife",
+  "tier": 1,
+  "description": "Stab zombies with F.",
+  "mul": {},
+  "model": [
+   {
+    "p": [
+     0,
+     0.06,
+     0
+    ],
+    "s": [
+     0.008,
+     0.12,
+     0.025
+    ],
+    "c": "#c8ccd2"
+   },
+   {
+    "p": [
+     0,
+     0,
+     0
+    ],
+    "s": [
+     0.02,
+     0.03,
+     0.03
+    ],
+    "c": "#1d1f23"
+   }
+  ],
+  "add": {
+   "melee": 25
+  }
+ },
+ {
+  "id": "bay_blade",
+  "slot": "bayonet",
+  "name": "Long Blade",
+  "tier": 2,
+  "description": "Serious stabbing.",
+  "mul": {},
+  "model": [
+   {
+    "p": [
+     0,
+     0.1,
+     0
+    ],
+    "s": [
+     0.008,
+     0.2,
+     0.03
+    ],
+    "c": "#d8dce2"
+   },
+   {
+    "p": [
+     0,
+     0,
+     0
+    ],
+    "s": [
+     0.022,
+     0.035,
+     0.035
+    ],
+    "c": "#1d1f23"
+   }
+  ],
+  "add": {
+   "melee": 45
+  }
+ },
+ {
+  "id": "bay_saw",
+  "slot": "bayonet",
+  "name": "Chainsaw Blade",
+  "tier": 4,
+  "description": "Brrrrrr. (F to use)",
+  "mul": {
+   "moveSpeed": 0.95
+  },
+  "model": [
+   {
+    "p": [
+     0,
+     0.12,
+     -0.01
+    ],
+    "s": [
+     0.03,
+     0.24,
+     0.07
+    ],
+    "c": "#c9a227"
+   },
+   {
+    "p": [
+     0,
+     0.12,
+     -0.01
+    ],
+    "s": [
+     0.034,
+     0.22,
+     0.012
+    ],
+    "c": "#222222"
+   }
+  ],
+  "add": {
+   "melee": 90
+  }
+ }
+]

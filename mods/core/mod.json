@@ -1,0 +1,7 @@
+{
+  "id": "core",
+  "name": "Last Armory Core",
+  "version": "1.0",
+  "description": "Base parts, town, shop, upgrades, customers, zombies and arenas.",
+  "loadOrder": 0
+}

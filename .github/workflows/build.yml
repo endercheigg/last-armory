@@ -1,0 +1,43 @@
+name: Build LAST ARMORY
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+jobs:
+  macos:
+    strategy:
+      matrix:
+        include:
+          - runner: macos-14   # Apple Silicon
+            arch: arm64
+          - runner: macos-13   # Intel
+            arch: x86_64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: bash mac/build_mac_app.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LastArmory-macOS-${{ matrix.arch }}
+          path: dist/LastArmory-macOS.zip
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install pyinstaller "panda3d>=1.10.15"
+      - run: python -m PyInstaller --noconfirm --onedir --windowed --name LastArmory --collect-binaries panda3d LastArmory.py
+      - run: python -m PyInstaller --noconfirm --onefile --console --name ArmoryServer --exclude-module panda3d --exclude-module direct --distpath dist/LastArmory ArmoryServer.py
+      - shell: bash
+        run: cp -r mods README.md MODDING.md dist/LastArmory/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LastArmory-Windows
+          path: dist/LastArmory
