@@ -14,7 +14,7 @@ from .content import client_payload, load_content
 from .gun import SLOTS, auto_name, compute_stats, gun_value, validate
 from .sim import (BASE_SPEED, BODY_H, BODY_R, EYE_H, HEAD_R, HEAD_Z, aim_vec, box_tuple, line_of_sight,
                   move_player, ray_box, ray_cylinder, ray_sphere, ray_world, spread_dir)
-from .town import build_town
+from .town import arena_boxes, build_town
 
 TICK = 30
 DT = 1.0 / TICK
@@ -416,7 +416,7 @@ class Game:
         rot = [a for a in self.config.get("arenas") or [] if a in self.content["arenas"]] or ids
         self.arena_index = (self.arena_index + 1) % len(rot)
         self.arena = self.content["arenas"][rot[self.arena_index]]
-        self.boxes = [box_tuple(b) for b in self.arena.get("boxes", [])]
+        self.boxes = [box_tuple(b) for b in arena_boxes(self.arena)]
         spawns = list(self.arena["spawns"])
         random.shuffle(spawns)
         for i, p in enumerate(self.players.values()):

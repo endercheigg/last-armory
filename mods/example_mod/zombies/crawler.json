@@ -1,1 +1,15 @@
-[ { "id": "ex_crawler", "name": "Crawler", "hp": 25, "speed": 6.5, "damage": 6, "reward": 12, "weight": 6, "minDay": 2, "color": "#8a6f8f", "scale": 0.8 } ]
+[
+ {
+  "id": "ex_crawler",
+  "name": "Crawler",
+  "hp": 25,
+  "speed": 6.5,
+  "damage": 6,
+  "reward": 12,
+  "weight": 6,
+  "minDay": 2,
+  "color": "#8a6f8f",
+  "scale": 0.8,
+  "mesh": "zombies/ribcage"
+ }
+]

@@ -175,7 +175,12 @@ def gun_layout(loadout, parts):
 
 
 def build_gun(parent, loadout, parts, flatten=True):
-    """Returns (NodePath, muzzle_pos). Gun points +Y, origin at back of receiver."""
+    """Returns (NodePath, muzzle_pos). Gun points +Y, origin at back of receiver.
+    Uses the real gun model for the receiver when one is installed, else the box model."""
+    from . import assets
+    real = assets.build_gun_mesh(parent, loadout, parts, build_part)
+    if real:
+        return real
     root = parent.attachNewNode("gun")
     res = gun_layout(loadout, parts)
     if not res:

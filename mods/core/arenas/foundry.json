@@ -207,7 +207,8 @@
    "w": 2,
    "d": 2,
    "h": 1.2,
-   "color": "#8a6a3d"
+   "color": "#8a6a3d",
+   "mesh": "props/Chest"
   },
   {
    "x": 22,
@@ -216,7 +217,8 @@
    "w": 1.4,
    "d": 1.4,
    "h": 0.9,
-   "color": "#8a6a3d"
+   "color": "#8a6a3d",
+   "mesh": "props/Chest"
   },
   {
    "x": 38,
@@ -225,7 +227,8 @@
    "w": 2,
    "d": 2,
    "h": 1.2,
-   "color": "#8a6a3d"
+   "color": "#8a6a3d",
+   "mesh": "props/Chest"
   },
   {
    "x": 36.6,
@@ -234,7 +237,8 @@
    "w": 1.4,
    "d": 1.4,
    "h": 0.9,
-   "color": "#8a6a3d"
+   "color": "#8a6a3d",
+   "mesh": "props/Chest"
   },
   {
    "x": 40,
@@ -243,7 +247,8 @@
    "w": 2,
    "d": 2,
    "h": 2.4,
-   "color": "#8a6a3d"
+   "color": "#8a6a3d",
+   "mesh": "props/Chest"
   },
   {
    "x": 18,
@@ -252,7 +257,8 @@
    "w": 2,
    "d": 2,
    "h": 2.4,
-   "color": "#8a6a3d"
+   "color": "#8a6a3d",
+   "mesh": "props/Chest"
   },
   {
    "x": 4,
@@ -363,5 +369,165 @@
    30
   ]
  ],
- "fogDensity": 0.022
+ "fogDensity": 0.022,
+ "props": [
+  {
+   "mesh": "props/Vehicle_Truck_Armored",
+   "x": 10,
+   "y": 30,
+   "z": 0,
+   "h": 90,
+   "collide": [
+    2.68,
+    5.03,
+    2.9
+   ]
+  },
+  {
+   "mesh": "props/Vehicle_Pickup",
+   "x": 50,
+   "y": 30,
+   "z": 0,
+   "h": -90,
+   "collide": [
+    2.08,
+    4.66,
+    1.85
+   ]
+  },
+  {
+   "mesh": "props/Container_Red",
+   "x": 30,
+   "y": 46,
+   "z": 0,
+   "h": 0,
+   "collide": [
+    5.14,
+    2.3,
+    2.6
+   ]
+  },
+  {
+   "mesh": "props/Container_Green",
+   "x": 30,
+   "y": 14,
+   "z": 0,
+   "h": 0,
+   "collide": [
+    5.14,
+    2.3,
+    2.6
+   ]
+  },
+  {
+   "mesh": "props/Barrel",
+   "x": 22,
+   "y": 22,
+   "z": 0,
+   "h": 0,
+   "collide": [
+    0.63,
+    0.63,
+    1.15
+   ]
+  },
+  {
+   "mesh": "props/Barrel",
+   "x": 38,
+   "y": 38,
+   "z": 0,
+   "h": 0,
+   "collide": [
+    0.63,
+    0.63,
+    1.15
+   ]
+  },
+  {
+   "mesh": "props/Barrel",
+   "x": 44,
+   "y": 20,
+   "z": 0,
+   "h": 0,
+   "collide": [
+    0.63,
+    0.63,
+    1.15
+   ]
+  },
+  {
+   "mesh": "props/TrafficBarrier_1",
+   "x": 16,
+   "y": 44,
+   "z": 0,
+   "h": 0,
+   "collide": [
+    1.4,
+    0.79,
+    1.11
+   ]
+  },
+  {
+   "mesh": "props/TrafficBarrier_2",
+   "x": 44,
+   "y": 16,
+   "z": 0,
+   "h": 0,
+   "collide": [
+    1.4,
+    0.7,
+    0.8
+   ]
+  },
+  {
+   "mesh": "props/StreetLights",
+   "x": 3,
+   "y": 3,
+   "z": 0,
+   "h": 135,
+   "collide": [
+    0.4,
+    0.4,
+    6
+   ]
+  },
+  {
+   "mesh": "props/StreetLights",
+   "x": 57,
+   "y": 57,
+   "z": 0,
+   "h": -45,
+   "collide": [
+    0.4,
+    0.4,
+    6
+   ]
+  },
+  {
+   "mesh": "props/Wheels_Stack",
+   "x": 24,
+   "y": 36,
+   "z": 0,
+   "h": 0,
+   "collide": [
+    0.59,
+    0.51,
+    0.61
+   ]
+  },
+  {
+   "mesh": "props/TrashBag_1",
+   "x": 35,
+   "y": 25,
+   "z": 0,
+   "h": 0
+  },
+  {
+   "mesh": "props/Pallet_Broken",
+   "x": 25,
+   "y": 33,
+   "z": 0,
+   "h": 0
+  }
+ ]
 }

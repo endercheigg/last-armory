@@ -99,7 +99,18 @@
     "c": "#1d1f23"
    }
   ],
-  "short": "Pistol"
+  "short": "Pistol",
+  "meshes": [
+   "Pistol_1",
+   "Pistol_2",
+   "Pistol_3",
+   "Pistol_4",
+   "Pistol_5",
+   "Pistol_6",
+   "Revolver_1",
+   "Revolver_2"
+  ],
+  "meshScale": 1.0
  },
  {
   "id": "rcv_smg",
@@ -201,7 +212,15 @@
     "c": "#1d1f23"
    }
   ],
-  "short": "SMG"
+  "short": "SMG",
+  "meshes": [
+   "SubmachineGun_1",
+   "SubmachineGun_2",
+   "SubmachineGun_3",
+   "SubmachineGun_4",
+   "SubmachineGun_5"
+  ],
+  "meshScale": 1.0
  },
  {
   "id": "rcv_shotgun",
@@ -318,7 +337,16 @@
     "c": "#7a4b2a"
    }
   ],
-  "short": "Shotgun"
+  "short": "Shotgun",
+  "meshes": [
+   "Shotgun_1",
+   "Shotgun_2",
+   "Shotgun_3",
+   "Shotgun_4",
+   "Shotgun_ShortStock",
+   "Shotgun_SawedOff"
+  ],
+  "meshScale": 1.0
  },
  {
   "id": "rcv_rifle",
@@ -420,7 +448,15 @@
     "c": "#1d1f23"
    }
   ],
-  "short": "Rifle"
+  "short": "Rifle",
+  "meshes": [
+   "AssaultRifle_1",
+   "AssaultRifle_2",
+   "AssaultRifle_3",
+   "AssaultRifle_4",
+   "AssaultRifle_5"
+  ],
+  "meshScale": 1.0
  },
  {
   "id": "rcv_marksman",
@@ -523,7 +559,13 @@
     "c": "#1d1f23"
    }
   ],
-  "short": "Marksman"
+  "short": "Marksman",
+  "meshes": [
+   "SniperRifle_1",
+   "SniperRifle_2",
+   "SniperRifle_3"
+  ],
+  "meshScale": 1.0
  },
  {
   "id": "rcv_lmg",
@@ -639,7 +681,15 @@
     "c": "#1d1f23"
    }
   ],
-  "short": "LMG"
+  "short": "LMG",
+  "meshes": [
+   "AssaultRifle2_1",
+   "AssaultRifle2_2",
+   "AssaultRifle2_3",
+   "AssaultRifle2_4"
+  ],
+  "meshScale": 1.1,
+  "tint": "#9aa38a"
  },
  {
   "id": "rcv_minigun",
@@ -755,7 +805,14 @@
     "c": "#e8892b"
    }
   ],
-  "short": "Minigun"
+  "short": "Minigun",
+  "meshes": [
+   "Bullpup_1",
+   "Bullpup_2",
+   "Bullpup_3"
+  ],
+  "meshScale": 1.25,
+  "tint": "#c9a26a"
  },
  {
   "id": "rcv_railgun",
@@ -884,7 +941,14 @@
     "c": "#3fd0ff"
    }
   ],
-  "short": "Railgun"
+  "short": "Railgun",
+  "meshes": [
+   "SniperRifle_4",
+   "SniperRifle_5",
+   "SniperRifle_6"
+  ],
+  "meshScale": 1.0,
+  "tint": "#7fd8ff"
  },
  {
   "id": "rcv_launcher",
@@ -1000,6 +1064,11 @@
     "c": "#3a4630"
    }
   ],
-  "short": "Launcher"
+  "short": "Launcher",
+  "meshes": [
+   "Shotgun_ShortStock"
+  ],
+  "meshScale": 1.15,
+  "tint": "#7d9a5a"
  }
 ]

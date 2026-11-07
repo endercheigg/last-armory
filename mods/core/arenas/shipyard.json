@@ -54,7 +54,8 @@
    "w": 6,
    "d": 2.4,
    "h": 2.6,
-   "color": "#b8452f"
+   "color": "#b8452f",
+   "mesh": "props/Container_Red"
   },
   {
    "x": 10,
@@ -63,7 +64,8 @@
    "w": 6,
    "d": 2.4,
    "h": 2.6,
-   "color": "#2f6cb8"
+   "color": "#2f6cb8",
+   "mesh": "props/Container_Green"
   },
   {
    "x": 56,
@@ -72,7 +74,8 @@
    "w": 6,
    "d": 2.4,
    "h": 2.6,
-   "color": "#b8452f"
+   "color": "#b8452f",
+   "mesh": "props/Container_Red"
   },
   {
    "x": 56,
@@ -81,7 +84,8 @@
    "w": 6,
    "d": 2.4,
    "h": 2.6,
-   "color": "#c9a227"
+   "color": "#c9a227",
+   "mesh": "props/Container_Red"
   },
   {
    "x": 22,
@@ -90,7 +94,8 @@
    "w": 2.4,
    "d": 6,
    "h": 2.6,
-   "color": "#2f8a5a"
+   "color": "#2f8a5a",
+   "mesh": "props/Container_Green"
   },
   {
    "x": 47.6,
@@ -99,7 +104,8 @@
    "w": 2.4,
    "d": 6,
    "h": 2.6,
-   "color": "#2f8a5a"
+   "color": "#2f8a5a",
+   "mesh": "props/Container_Green"
   },
   {
    "x": 33,
@@ -108,7 +114,8 @@
    "w": 6,
    "d": 2.4,
    "h": 2.6,
-   "color": "#c9a227"
+   "color": "#c9a227",
+   "mesh": "props/Container_Red"
   },
   {
    "x": 33,
@@ -117,7 +124,8 @@
    "w": 6,
    "d": 2.4,
    "h": 2.6,
-   "color": "#2f6cb8"
+   "color": "#2f6cb8",
+   "mesh": "props/Container_Green"
   },
   {
    "x": 30,
@@ -162,7 +170,8 @@
    "w": 2,
    "d": 2,
    "h": 1.2,
-   "color": "#8a6a3d"
+   "color": "#8a6a3d",
+   "mesh": "props/Chest"
   },
   {
    "x": 8,
@@ -171,7 +180,8 @@
    "w": 1.4,
    "d": 1.4,
    "h": 0.8,
-   "color": "#8a6a3d"
+   "color": "#8a6a3d",
+   "mesh": "props/Chest"
   },
   {
    "x": 64,
@@ -180,7 +190,8 @@
    "w": 2,
    "d": 2,
    "h": 1.2,
-   "color": "#8a6a3d"
+   "color": "#8a6a3d",
+   "mesh": "props/Chest"
   },
   {
    "x": 62.6,
@@ -189,7 +200,8 @@
    "w": 1.4,
    "d": 1.4,
    "h": 0.8,
-   "color": "#8a6a3d"
+   "color": "#8a6a3d",
+   "mesh": "props/Chest"
   },
   {
    "x": 18,
@@ -300,5 +312,136 @@
    26
   ]
  ],
- "fogDensity": 0.022
+ "fogDensity": 0.022,
+ "props": [
+  {
+   "mesh": "props/Vehicle_Truck",
+   "x": 18,
+   "y": 34,
+   "z": 0,
+   "h": 90,
+   "collide": [
+    2.44,
+    4.73,
+    2.88
+   ]
+  },
+  {
+   "mesh": "props/Vehicle_Sports_Armored",
+   "x": 54,
+   "y": 18,
+   "z": 0,
+   "h": 0,
+   "collide": [
+    2.66,
+    5.09,
+    1.86
+   ]
+  },
+  {
+   "mesh": "props/WaterTower",
+   "x": 66,
+   "y": 46,
+   "z": 0,
+   "h": 0,
+   "collide": [
+    2.38,
+    2.44,
+    9.38
+   ]
+  },
+  {
+   "mesh": "props/Barrel",
+   "x": 26,
+   "y": 12,
+   "z": 0,
+   "h": 0,
+   "collide": [
+    0.63,
+    0.63,
+    1.15
+   ]
+  },
+  {
+   "mesh": "props/Barrel",
+   "x": 46,
+   "y": 40,
+   "z": 0,
+   "h": 0,
+   "collide": [
+    0.63,
+    0.63,
+    1.15
+   ]
+  },
+  {
+   "mesh": "props/PlasticBarrier",
+   "x": 36,
+   "y": 18,
+   "z": 0,
+   "h": 0,
+   "collide": [
+    0.93,
+    0.3,
+    0.6
+   ]
+  },
+  {
+   "mesh": "props/PlasticBarrier",
+   "x": 36,
+   "y": 34,
+   "z": 0,
+   "h": 0,
+   "collide": [
+    0.93,
+    0.3,
+    0.6
+   ]
+  },
+  {
+   "mesh": "props/TrafficCone_1",
+   "x": 40,
+   "y": 20,
+   "z": 0,
+   "h": 0
+  },
+  {
+   "mesh": "props/TrafficCone_2",
+   "x": 32,
+   "y": 32,
+   "z": 0,
+   "h": 0
+  },
+  {
+   "mesh": "props/StreetLights",
+   "x": 36,
+   "y": 3,
+   "z": 0,
+   "h": 180,
+   "collide": [
+    0.4,
+    0.4,
+    6
+   ]
+  },
+  {
+   "mesh": "props/Pipes",
+   "x": 8,
+   "y": 22,
+   "z": 0,
+   "h": 0,
+   "collide": [
+    0.67,
+    3.02,
+    0.67
+   ]
+  },
+  {
+   "mesh": "props/Pallet",
+   "x": 62,
+   "y": 30,
+   "z": 0,
+   "h": 0
+  }
+ ]
 }

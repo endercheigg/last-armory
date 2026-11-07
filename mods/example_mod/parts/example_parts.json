@@ -1,21 +1,133 @@
 [
-  {
-    "id": "ex_nailgun", "slot": "receiver", "name": "Scrap Nail Gun", "short": "Nailer", "tier": 2,
-    "description": "Built from junk. Fires nails really fast.",
-    "set": { "damage": 7, "fireRate": 16, "auto": 1, "magSize": 60, "reloadTime": 2.2, "spread": 6, "recoil": 0.3, "range": 22, "zoom": 1.2 },
-    "length": 0.3,
-    "mounts": { "barrel": [0, 0.3, 0.0], "stock": [0, 0, 0], "magazine": [0, 0.18, -0.05], "sight": [0, 0.14, 0.06], "grip": [0, 0.27, -0.05] },
-    "model": [
-      { "p": [0, 0.15, 0], "s": [0.07, 0.3, 0.1], "c": "#c9a227" },
-      { "p": [0, 0.08, -0.1], "s": [0.05, 0.06, 0.12], "c": "#222222" },
-      { "p": [0, 0.22, 0.06], "s": [0.03, 0.12, 0.03], "c": "#d83c3c" }
-    ]
+ {
+  "id": "ex_nailgun",
+  "slot": "receiver",
+  "name": "Scrap Nail Gun",
+  "short": "Nailer",
+  "tier": 2,
+  "description": "Built from junk. Fires nails really fast.",
+  "set": {
+   "damage": 7,
+   "fireRate": 16,
+   "auto": 1,
+   "magSize": 60,
+   "reloadTime": 2.2,
+   "spread": 6,
+   "recoil": 0.3,
+   "range": 22,
+   "zoom": 1.2
   },
-  {
-    "id": "ex_gold_barrel", "extends": "brl_long", "name": "Gold Barrel", "tier": 3,
-    "description": "A Long Barrel, but shiny. Collectors pay extra. Made with \"extends\".",
-    "price": 260,
-    "mul": { "damage": 1.1 },
-    "model": [ { "p": [0, 0.17, 0], "s": [0.03, 0.34, 0.03], "c": "#d4a72c" }, { "p": [0, 0.08, 0], "s": [0.056, 0.16, 0.056], "c": "#b8891c" } ]
-  }
+  "length": 0.3,
+  "mounts": {
+   "barrel": [
+    0,
+    0.3,
+    0.0
+   ],
+   "stock": [
+    0,
+    0,
+    0
+   ],
+   "magazine": [
+    0,
+    0.18,
+    -0.05
+   ],
+   "sight": [
+    0,
+    0.14,
+    0.06
+   ],
+   "grip": [
+    0,
+    0.27,
+    -0.05
+   ]
+  },
+  "model": [
+   {
+    "p": [
+     0,
+     0.15,
+     0
+    ],
+    "s": [
+     0.07,
+     0.3,
+     0.1
+    ],
+    "c": "#c9a227"
+   },
+   {
+    "p": [
+     0,
+     0.08,
+     -0.1
+    ],
+    "s": [
+     0.05,
+     0.06,
+     0.12
+    ],
+    "c": "#222222"
+   },
+   {
+    "p": [
+     0,
+     0.22,
+     0.06
+    ],
+    "s": [
+     0.03,
+     0.12,
+     0.03
+    ],
+    "c": "#d83c3c"
+   }
+  ],
+  "meshes": [
+   "SubmachineGun_5"
+  ],
+  "tint": "#e8c040"
+ },
+ {
+  "id": "ex_gold_barrel",
+  "extends": "brl_long",
+  "name": "Gold Barrel",
+  "tier": 3,
+  "description": "A Long Barrel, but shiny. Collectors pay extra. Made with \"extends\".",
+  "price": 260,
+  "mul": {
+   "damage": 1.1
+  },
+  "model": [
+   {
+    "p": [
+     0,
+     0.17,
+     0
+    ],
+    "s": [
+     0.03,
+     0.34,
+     0.03
+    ],
+    "c": "#d4a72c"
+   },
+   {
+    "p": [
+     0,
+     0.08,
+     0
+    ],
+    "s": [
+     0.056,
+     0.16,
+     0.056
+    ],
+    "c": "#b8891c"
+   }
+  ]
+ }
 ]

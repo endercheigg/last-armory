@@ -6,8 +6,10 @@ import time
 from panda3d.core import (CullFaceAttrib, RenderState, AmbientLight, Camera, DirectionalLight, Fog, KeyboardButton, MouseButton, NodePath,
                           PerspectiveLens, Point3, PointLight, Spotlight, TextureStage, TransparencyAttrib, Vec3)
 
+from ..town import arena_boxes
 from ..sim import EYE_H, aim_vec, box_tuple, move_player, ray_world
 from . import hud as H
+from . import assets as A
 from . import geom as G
 from . import panels as P
 from .geom import (PLAYER_COLORS, Character, box, box_min, build_gun, bounds_center, grid_texture, hexc, mix,
@@ -136,6 +138,68 @@ class Effects:
 
 
 
+# ====================================================================== MODELS IN THE WORLD
+def place_prop(parent, pr):
+    """A prop: {"mesh", "x", "y", "z", "h", "s"}. Returns the node or None if the model is missing."""
+    n = parent.attachNewNode("prop")
+    inst = A.instance(pr["mesh"], n)
+    if inst is None:
+        n.removeNode()
+        return None
+    n.setPos(pr["x"], pr["y"], pr.get("z", 0))
+    n.setH(pr.get("h", 0))
+    n.setScale(pr.get("s", 1.0))
+    if pr.get("tint"):
+        n.setColorScale(*hexc(pr["tint"]))
+    return n
+
+
+def place_box(parent, b, cube_parent=None):
+    """A collision box drawn as a cube, or as a real model stretched to fill it ("mesh"), or not at all ("invisible")."""
+    if b.get("invisible"):
+        return None
+    if b.get("mesh") and A.has(b["mesh"]):
+        n = parent.attachNewNode("meshbox")
+        n.setPos(b["x"], b["y"], b.get("z", 0))
+        holder = n.attachNewNode("h")
+        inst = A.instance(b["mesh"], holder)
+        a0, b0 = inst.getTightBounds()
+        if (b["w"] < b["d"]) != ((b0[0] - a0[0]) < (b0[1] - a0[1])):
+            inst.setH(90)
+        A.fit(holder, b["w"], b["d"], b["h"])
+        if b.get("tint"):
+            n.setColorScale(*hexc(b["tint"]))
+        return n
+    return box_min(cube_parent or parent, b["x"], b["y"], b.get("z", 0), b["w"], b["d"], b["h"], hexc(b.get("color", "#6b6f75")))
+
+
+# ====================================================================== CHARACTER FACTORIES
+def make_player(parent, info, gun_scale=1.15):
+    if A.has(A.PLAYER_MODELS[0]):
+        return A.AnimChar(parent, A.PLAYER_MODELS[info["color"] % len(A.PLAYER_MODELS)])
+    return Character(parent, PLAYER_COLORS[info["color"] % 8], gun_scale=gun_scale)
+
+
+def make_customer(parent, look):
+    if A.has(A.PLAYER_MODELS[0]):
+        f = 0.8 + (look * 37 % 40) / 100.0
+        return A.AnimChar(parent, A.PLAYER_MODELS[look % len(A.PLAYER_MODELS)], tint=(f, f * 0.97, f * 0.94, 1))
+    return Character(parent, CIVILIAN[look % len(CIVILIAN)], gun_scale=1, pants_hex=CIVILIAN[(look + 3) % len(CIVILIAN)],
+                     hat=look % 3 == 0)
+
+
+def make_zombie(parent, zt):
+    mesh = zt.get("mesh", "zombies/basic")
+    if A.has(mesh):
+        return A.AnimChar(parent, mesh, zombie=True, scale=zt.get("scale", 1.0))
+    ch = Character(parent, "#5a5040", skin_hex=zt.get("color", "#6b8f4e"), zombie=True, pants_hex="#3a3328", hat=False)
+    ch.root.setScale(zt.get("scale", 1.0))
+    return ch
+
+
+CIVILIAN = ["#b55d3c", "#4f7a9a", "#7a6a4f", "#5f8a5a", "#8a4f6a", "#a08a3c", "#4f5a8a", "#8a8a8a"]
+
+
 # ====================================================================== LOBBY
 class LobbyView:
     def __init__(self, m):
@@ -144,7 +208,9 @@ class LobbyView:
         app = m.app
         app.setBackgroundColor(*hexc("#141820"))
         app.render.clearFog()
-        make_lights(self.root, film=30)
+        sun, _ = make_lights(self.root, "#fff4e4", "#9aa0b0", film=30)
+        sun.setHpr(200, -40, 0)  # light the characters from the camera side
+        m.hud.show_combat(False)
         box(self.root, (0, 0, -0.1), (40, 40, 0.2), hexc("#2a2e36"))
         box(self.root, (0, 0, 0.05), (14, 4, 0.1), hexc("#3a3f48"))
         self.chars = {}
@@ -162,11 +228,11 @@ class LobbyView:
         ps = sorted(self.m.infos.values(), key=lambda p: p["id"])
         n = len(ps)
         for i, p in enumerate(ps):
-            c = Character(self.root, PLAYER_COLORS[p["color"] % 8], gun_scale=1.8)
+            c = make_player(self.root, p, gun_scale=1.8)
             c.root.setPos((i - (n - 1) / 2) * 1.6, 0, 0.1)
             c.root.setH(180)
             c.set_gun(p["held"], self.m.parts)
-            tag = text(c.root, p["name"], 0.28, hexc(PLAYER_COLORS[p["color"] % 8]), font=self.m.app.font3d)
+            tag = text(c.root, p["name"], 0.2, hexc(PLAYER_COLORS[p["color"] % 8]), font=self.m.app.font3d)
             tag.setZ(2.15)
             tag.setBillboardPointEye()
             self.chars[p["id"]] = c
@@ -189,7 +255,7 @@ class LobbyView:
 class FPSView:
     night = False
 
-    def __init__(self, m, boxes, size, light, ambient, sky, fog_color, fog_density, ground_color, ground_extra=60):
+    def __init__(self, m, boxes, size, light, ambient, sky, fog_color, fog_density, ground_color, ground_extra=60, props=()):
         self.m = m
         app = m.app
         self.size = size
@@ -210,9 +276,12 @@ class FPSView:
         g.setTexture(grid_texture(cells=2, line=0.9))
         g.setTexScale(TextureStage.getDefault(), (W + ground_extra * 2) / 4, (D + ground_extra * 2) / 4)
         blocks = self.static.attachNewNode("blocks")
+        models = self.root.attachNewNode("models")  # not flattened: keeps per-model tints
         for b in boxes:
-            box_min(blocks, b["x"], b["y"], b.get("z", 0), b["w"], b["d"], b["h"], hexc(b.get("color", "#6b6f75")))
+            place_box(models, b, blocks)
         blocks.setTexture(grid_texture(line=0.9, cells=2))
+        for pr in props:
+            place_prop(models, pr)
         self.blocks = blocks
         self.chars = {}
         self.dead_at = {}
@@ -442,7 +511,7 @@ class FPSView:
                 continue
             c = self.chars.get(pid)
             if not c:
-                c = Character(self.root, PLAYER_COLORS[info["color"] % 8], gun_scale=1.15)
+                c = make_player(self.root, info)
                 tag = text(c.root, info["name"], 0.22, hexc(PLAYER_COLORS[info["color"] % 8]), font=self.font)
                 tag.setZ(2.2)
                 tag.setBillboardPointEye()
@@ -453,12 +522,18 @@ class FPSView:
                 c.root.show()
                 c.root.setPos(r[1], r[2], r[3])
                 c.root.setH(r[4])
-                c.root.setR(0)
+                if hasattr(c, "revive"):
+                    c.revive()
+                else:
+                    c.root.setR(0)
                 c.animate(dt, r[8] if len(r) > 8 else 0, r[5])
             else:
                 t0 = self.dead_at.setdefault(pid, now)
-                c.root.setR(85 * min(1, (now - t0) * 3))
-                if now - t0 > 3:
+                if hasattr(c, "die"):
+                    c.die()
+                else:
+                    c.root.setR(85 * min(1, (now - t0) * 3))
+                if now - t0 > 4:
                     c.root.hide()
         m.alive_count = len(alive_ids)
         self.update_world(dt, now)
@@ -506,6 +581,10 @@ class FPSView:
             if self.vm_gun:
                 self.vm_gun.removeNode()
             self.vm_gun, self.vm_muzzle = build_gun(self.vm_holder, info["held"], m.parts)
+            a0, b0 = self.vm_gun.getTightBounds() or ((0, 0, 0), (0, 0.3, 0))
+            glen = b0[1] - a0[1]
+            self.vm_gun.setPos(0, -a0[1] - glen * 0.38, 0)
+            self.vm_muzzle = (self.vm_muzzle[0], self.vm_muzzle[1] - a0[1] - glen * 0.38, self.vm_muzzle[2])
             self.vm_key = key
             self.vm_flash = sphere_geom().copyTo(self.vm_holder)
             self.vm_flash.setPos(*self.vm_muzzle)
@@ -522,7 +601,7 @@ class FPSView:
         bx = math.sin(self.bob) * 0.008 * (1 - ads)
         bz = abs(math.cos(self.bob)) * 0.008 * (1 - ads)
         lunge = math.sin(min(1, self.stab) * math.pi) * 0.25
-        self.vm_holder.setPos(0.16 * (1 - ads) + bx - lunge * 0.3, 0.3 - self.kick * 0.05 + lunge, -0.16 + 0.1 * ads - dip * 0.12 + bz)
+        self.vm_holder.setPos(0.17 * (1 - ads) + bx - lunge * 0.3, 0.42 - self.kick * 0.05 + lunge, -0.19 + 0.11 * ads - dip * 0.12 + bz)
         self.vm_holder.setHpr(lunge * 40, self.kick * 5 - dip * 25, -dip * 20)
 
     def update_hud(self, st, alive):
@@ -565,9 +644,9 @@ CIVILIAN = ["#b55d3c", "#4f7a9a", "#7a6a4f", "#5f8a5a", "#8a4f6a", "#a08a3c", "#
 class TownView(FPSView):
     def __init__(self, m, world):
         t = world["town"]
-        super().__init__(m, world["boxes"], world["size"], t.get("lightColor", "#fff2dc"), t.get("ambient", "#7a8090"),
+        super().__init__(m, world["boxes"], world["size"], t.get("lightColor", "#fff2dc"), t.get("ambient", "#8a90a0"),
                          t.get("skyColor", "#a9c3d9"), t.get("fogColor", "#b9c9d6"), t.get("fogDensity", 0.006),
-                         t.get("groundColor", "#7b6d58"))
+                         t.get("groundColor", "#7b6d58"), props=world.get("props", []))
         self.world = world
         for b in t.get("roads", []):
             box_min(self.static, b["x"], b["y"], b.get("z", 0), b["w"], b["d"], b["h"], hexc(b.get("color", "#666666")))
@@ -611,6 +690,8 @@ class TownView(FPSView):
         if c:
             c["bubble"].node().setText(msg["text"])
             c["bubble"].node().setTextColor(*(H.GOOD if msg.get("happy") else H.BAD))
+            if hasattr(c["char"], "gesture"):
+                c["char"].gesture("Yes" if msg.get("happy") else "No")
 
     def on_target_hit(self, msg):
         for t in self.targets:
@@ -685,6 +766,9 @@ class TownView(FPSView):
                 n = self.root.attachNewNode(kind)
                 for L in pl[src][:lvl]:
                     for b in L:
+                        if "mesh" in b:
+                            place_prop(n, b)
+                            continue
                         bx = box_min(n, b["x"], b["y"], b.get("z", 0), b["w"], b["d"], b["h"], hexc(b.get("color", "#888888")))
                         if b.get("color", "").lower() in ("#ff9d3b",):
                             bx.setLightOff()
@@ -768,11 +852,10 @@ class TownView(FPSView):
             if not c:
                 info = self.cust_info.get(cid, {})
                 look = info.get("look", cid)
-                ch = Character(self.root, CIVILIAN[look % len(CIVILIAN)], gun_scale=1, pants_hex=CIVILIAN[(look + 3) % len(CIVILIAN)],
-                               hat=look % 3 == 0)
+                ch = make_customer(self.root, look)
                 pref = m.content.get("customers", {}).get(info.get("pref"), {})
                 label = f"{info.get('name', '?')}:  wants {pref.get('label', 'A GUN')}  (${info.get('budget', '?')})"
-                bub = text(ch.root, label, 0.2, H.WHITE, font=self.font)
+                bub = text(ch.root, label, 0.13, H.WHITE, font=self.font)
                 bub.setZ(2.15)
                 bub.setBillboardPointEye()
                 c = {"char": ch, "bubble": bub}
@@ -812,13 +895,14 @@ class NightView(FPSView):
 
     def __init__(self, m, msg):
         a = msg["arena"]
-        super().__init__(m, a.get("boxes", []), a["size"], a.get("lightColor", "#9ab0ff"), a.get("ambient", "#3a4258"),
+        super().__init__(m, arena_boxes(a), a["size"], a.get("lightColor", "#9ab0ff"), a.get("ambient", "#3a4258"),
                          a.get("skyColor", "#0b0f1a"), a.get("fogColor", "#141a28"), a.get("fogDensity", 0.03),
-                         a.get("groundColor", "#3a3d42"))
+                         a.get("groundColor", "#3a3d42"), props=a.get("props", []))
         self.static.flattenStrong()
         self.start_at = time.monotonic() + msg.get("start_in", 0)
         self.count_shown = None
         self.zombies = {}
+        self.dying = []
         self.zsnaps = []
         self.spec_idx = 0
         torch = Spotlight("torch")
@@ -848,8 +932,12 @@ class NightView(FPSView):
         z = self.zombies.pop(msg["id"], None)
         if z:
             p = z["char"].root.getPos()
-            self.fx.sparks(p + Vec3(0, 0, 1), (0.4, 0.7, 0.3, 1), 10, 4)
-            z["char"].remove()
+            self.fx.sparks(p + Vec3(0, 0, 1), (0.6, 0.1, 0.1, 1), 10, 4)
+            if hasattr(z["char"], "die"):
+                z["char"].die()
+                self.dying.append((time.monotonic() + 2.5, z["char"]))
+            else:
+                z["char"].remove()
 
     def interp_zombies(self):
         now = time.monotonic() - INTERP
@@ -885,6 +973,9 @@ class NightView(FPSView):
             m.hud.flash_big("SURVIVE!", "", H.BAD, 0.8)
             app.sounds.play("go", 0.7)
         types = list(m.content.get("zombies", {}).values())
+        for item in [d for d in self.dying if d[0] < now]:
+            self.dying.remove(item)
+            item[1].remove()
         zpos = self.interp_zombies()
         for zid in list(self.zombies):
             if zid not in zpos:
@@ -893,8 +984,7 @@ class NightView(FPSView):
             zz = self.zombies.get(zid)
             if not zz:
                 zt = types[ti] if ti < len(types) else {}
-                ch = Character(self.root, "#5a5040", skin_hex=zt.get("color", "#6b8f4e"), zombie=True, pants_hex="#3a3328", hat=False)
-                ch.root.setScale(zt.get("scale", 1.0))
+                ch = make_zombie(self.root, zt)
                 zz = {"char": ch, "groan": now + random.uniform(1, 6)}
                 self.zombies[zid] = zz
             ch = zz["char"]
@@ -942,6 +1032,8 @@ class NightView(FPSView):
     def destroy(self):
         for z in self.zombies.values():
             z["char"].remove()
+        for _, ch in self.dying:
+            ch.remove()
         self.torch.removeNode()
         self.m.hud.alive.setText("")
         super().destroy()

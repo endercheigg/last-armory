@@ -124,6 +124,8 @@ def run(root, extra_prc=""):
                 self.font = self.font3d = self.loader.loadFont("cmss12")
             self.sounds = Sounds(self, os.path.join(self.data_dir, "sfx"))
             self.sounds.volume = self.settings["volume"]
+            from . import assets
+            assets.init(root, self.loader)
             self.local = load_content(os.path.join(root, "mods"), load_scripts=False)
             self.server_proc = None
             self.match = None

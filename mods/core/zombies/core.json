@@ -7,7 +7,8 @@
   "damage": 10,
   "reward": 15,
   "weight": 10,
-  "color": "#6b8f4e"
+  "color": "#6b8f4e",
+  "mesh": "zombies/basic"
  },
  {
   "id": "runner",
@@ -18,7 +19,8 @@
   "reward": 20,
   "weight": 5,
   "minDay": 2,
-  "color": "#8f8a4e"
+  "color": "#8f8a4e",
+  "mesh": "zombies/arm"
  },
  {
   "id": "brute",
@@ -30,6 +32,7 @@
   "weight": 2,
   "minDay": 3,
   "color": "#4e6b5f",
-  "scale": 1.35
+  "scale": 1.35,
+  "mesh": "zombies/chubby"
  }
 ]

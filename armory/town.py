@@ -23,6 +23,27 @@ def box_to_world(plot, b):
             "h": b["h"], "color": b.get("color", "#777777")}
 
 
+def prop_to_world(plot, pr):
+    x, y = to_world(plot, pr["x"], pr["y"])
+    return dict(pr, x=x, y=y, h=pr.get("h", 0) + plot["rot"])
+
+
+def prop_boxes(props):
+    """Collision boxes for props that have "collide": [w, d, h] (centred on the prop, rotated in 90-degree steps)."""
+    out = []
+    for pr in props:
+        c = pr.get("collide")
+        if not c:
+            continue
+        w, d = (c[1], c[0]) if round(pr.get("h", 0) / 90) % 2 else (c[0], c[1])
+        out.append({"x": pr["x"] - w / 2, "y": pr["y"] - d / 2, "z": pr.get("z", 0), "w": w, "d": d, "h": c[2], "invisible": True})
+    return out
+
+
+def arena_boxes(arena):
+    return list(arena.get("boxes", [])) + prop_boxes(arena.get("props", []))
+
+
 def point(plot, p, z=0.0):
     x, y = to_world(plot, p[0], p[1])
     return [x, y, p[2] if len(p) > 2 else z]
@@ -34,13 +55,20 @@ def build_town(content, town_id=None, shop_id=None):
     shops = content["shops"]
     shop = shops.get(shop_id or town.get("shop")) or next(iter(shops.values()))
     boxes = [dict(b) for b in town.get("boxes", [])]
+    props = [dict(p) for p in town.get("props", [])]
     plots = []
     targets = []
     objects = []
     for i, pl in enumerate(town["plots"]):
         p = {"index": i, "x": pl["x"], "y": pl["y"], "rot": pl.get("rot", 0)}
         for b in shop.get("boxes", []):
-            boxes.append(box_to_world(p, b))
+            wb = box_to_world(p, b)
+            for k in ("mesh", "invisible"):
+                if k in b:
+                    wb[k] = b[k]
+            boxes.append(wb)
+        for pr in shop.get("props", []):
+            props.append(prop_to_world(p, pr))
         sw, sd = shop.get("size", [12, 20])
         p["center"] = point(p, (sw / 2, sd / 2))
         p["door"] = point(p, shop["door"])
@@ -61,12 +89,13 @@ def build_town(content, town_id=None, shop_id=None):
             x, y = to_world(p, t[0], t[1])
             tb = (x - 0.4, y - 0.4, 0.0, 0.8, 0.8, 1.9)
             targets.append({"plot": i, "idx": j, "box": tb, "pos": [x, y, 1.2]})
-        p["decor"] = [[box_to_world(p, b) for b in level] for level in shop.get("decor", [])]
+        p["decor"] = [[prop_to_world(p, b) if "mesh" in b else box_to_world(p, b) for b in level] for level in shop.get("decor", [])]
         p["sign"] = [[box_to_world(p, b) for b in level] for level in shop.get("sign", [])]
         p["awning"] = [box_to_world(p, b) for b in shop.get("awning", [])]
         p["sign_text"] = point(p, shop.get("signText", [sw / 2, -0.4, 3.6]), 3.6)
         p["sign_rot"] = p["rot"]
         plots.append(p)
-    return {"town": town, "shop": shop, "size": town["size"], "boxes": boxes, "plots": plots,
+    boxes += prop_boxes(props)
+    return {"town": town, "shop": shop, "size": town["size"], "boxes": boxes, "plots": plots, "props": props,
             "targets": targets, "objects": objects, "gates": town.get("gates", [[2, town["size"][1] / 2]]),
             "plaza": town.get("plaza", [town["size"][0] / 2, town["size"][1] / 2])}

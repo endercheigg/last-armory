@@ -1,0 +1,2453 @@
+{
+ "source": "Quaternius Zombie Apocalypse Kit + Ultimate Gun Pack, Kenney Furniture Kit (all CC0)",
+ "models": {
+  "chars/lis": {
+   "kind": "character",
+   "facing": 180,
+   "size": [
+    2.043,
+    0.651,
+    1.718
+   ],
+   "min": [
+    -1.021,
+    -0.237,
+    -0.005
+   ]
+  },
+  "chars/matt": {
+   "kind": "character",
+   "facing": 180,
+   "size": [
+    2.008,
+    0.548,
+    1.508
+   ],
+   "min": [
+    -1.004,
+    -0.136,
+    -0.005
+   ]
+  },
+  "chars/sam": {
+   "kind": "character",
+   "facing": 180,
+   "size": [
+    2.043,
+    0.541,
+    1.53
+   ],
+   "min": [
+    -1.021,
+    -0.148,
+    -0.005
+   ]
+  },
+  "chars/shaun": {
+   "kind": "character",
+   "facing": 180,
+   "size": [
+    2.011,
+    0.867,
+    1.534
+   ],
+   "min": [
+    -1.005,
+    -0.269,
+    -0.005
+   ]
+  },
+  "zombies/basic": {
+   "kind": "zombie",
+   "facing": 180,
+   "size": [
+    1.888,
+    0.683,
+    1.362
+   ],
+   "min": [
+    -0.944,
+    -0.38,
+    -0.005
+   ]
+  },
+  "zombies/chubby": {
+   "kind": "zombie",
+   "facing": 180,
+   "size": [
+    2.353,
+    0.774,
+    1.64
+   ],
+   "min": [
+    -1.176,
+    -0.312,
+    -0.001
+   ]
+  },
+  "zombies/arm": {
+   "kind": "zombie",
+   "facing": 180,
+   "size": [
+    2.984,
+    0.641,
+    1.567
+   ],
+   "min": [
+    -1.72,
+    -0.134,
+    -0.002
+   ]
+  },
+  "zombies/ribcage": {
+   "kind": "zombie",
+   "facing": 180,
+   "size": [
+    0.507,
+    0.425,
+    1.063
+   ],
+   "min": [
+    -0.253,
+    -0.122,
+    -0.005
+   ]
+  },
+  "guns/AssaultRifle2_1": {
+   "kind": "gun",
+   "family": "AssaultRifle2",
+   "length": 0.92,
+   "muzzle": [
+    0,
+    0.92,
+    0.07
+   ],
+   "top": [
+    0,
+    0.386,
+    0.159
+   ],
+   "under": [
+    0,
+    0.644,
+    -0.048
+   ],
+   "grip": [
+    0,
+    0.276,
+    -0.08
+   ],
+   "size": [
+    0.062,
+    0.92,
+    0.319
+   ],
+   "min": [
+    -0.031,
+    0.0,
+    -0.159
+   ]
+  },
+  "guns/AssaultRifle2_2": {
+   "kind": "gun",
+   "family": "AssaultRifle2",
+   "length": 0.92,
+   "muzzle": [
+    0,
+    0.92,
+    0.075
+   ],
+   "top": [
+    0,
+    0.386,
+    0.171
+   ],
+   "under": [
+    0,
+    0.644,
+    -0.051
+   ],
+   "grip": [
+    0,
+    0.276,
+    -0.085
+   ],
+   "size": [
+    0.051,
+    0.92,
+    0.341
+   ],
+   "min": [
+    -0.026,
+    0.0,
+    -0.171
+   ]
+  },
+  "guns/AssaultRifle2_3": {
+   "kind": "gun",
+   "family": "AssaultRifle2",
+   "length": 0.92,
+   "muzzle": [
+    0,
+    0.92,
+    0.079
+   ],
+   "top": [
+    0,
+    0.386,
+    0.179
+   ],
+   "under": [
+    0,
+    0.644,
+    -0.054
+   ],
+   "grip": [
+    0,
+    0.276,
+    -0.089
+   ],
+   "size": [
+    0.085,
+    0.92,
+    0.357
+   ],
+   "min": [
+    -0.042,
+    0.0,
+    -0.179
+   ]
+  },
+  "guns/AssaultRifle2_4": {
+   "kind": "gun",
+   "family": "AssaultRifle2",
+   "length": 0.92,
+   "muzzle": [
+    0,
+    0.92,
+    0.106
+   ],
+   "top": [
+    0,
+    0.386,
+    0.242
+   ],
+   "under": [
+    0,
+    0.644,
+    -0.073
+   ],
+   "grip": [
+    0,
+    0.276,
+    -0.121
+   ],
+   "size": [
+    0.076,
+    0.92,
+    0.484
+   ],
+   "min": [
+    -0.038,
+    0.0,
+    -0.242
+   ]
+  },
+  "guns/AssaultRifle_1": {
+   "kind": "gun",
+   "family": "AssaultRifle",
+   "length": 0.9,
+   "muzzle": [
+    0,
+    0.9,
+    0.08
+   ],
+   "top": [
+    0,
+    0.378,
+    0.183
+   ],
+   "under": [
+    0,
+    0.63,
+    -0.055
+   ],
+   "grip": [
+    0,
+    0.27,
+    -0.091
+   ],
+   "size": [
+    0.057,
+    0.9,
+    0.365
+   ],
+   "min": [
+    -0.028,
+    0.0,
+    -0.183
+   ]
+  },
+  "guns/AssaultRifle_2": {
+   "kind": "gun",
+   "family": "AssaultRifle",
+   "length": 0.9,
+   "muzzle": [
+    0,
+    0.9,
+    0.058
+   ],
+   "top": [
+    0,
+    0.378,
+    0.133
+   ],
+   "under": [
+    0,
+    0.63,
+    -0.04
+   ],
+   "grip": [
+    0,
+    0.27,
+    -0.066
+   ],
+   "size": [
+    0.033,
+    0.9,
+    0.266
+   ],
+   "min": [
+    -0.016,
+    0.0,
+    -0.133
+   ]
+  },
+  "guns/AssaultRifle_3": {
+   "kind": "gun",
+   "family": "AssaultRifle",
+   "length": 0.9,
+   "muzzle": [
+    0,
+    0.9,
+    0.092
+   ],
+   "top": [
+    0,
+    0.378,
+    0.21
+   ],
+   "under": [
+    0,
+    0.63,
+    -0.063
+   ],
+   "grip": [
+    0,
+    0.27,
+    -0.105
+   ],
+   "size": [
+    0.051,
+    0.9,
+    0.42
+   ],
+   "min": [
+    -0.026,
+    0.0,
+    -0.21
+   ]
+  },
+  "guns/AssaultRifle_4": {
+   "kind": "gun",
+   "family": "AssaultRifle",
+   "length": 0.9,
+   "muzzle": [
+    0,
+    0.9,
+    0.058
+   ],
+   "top": [
+    0,
+    0.378,
+    0.131
+   ],
+   "under": [
+    0,
+    0.63,
+    -0.039
+   ],
+   "grip": [
+    0,
+    0.27,
+    -0.066
+   ],
+   "size": [
+    0.032,
+    0.9,
+    0.262
+   ],
+   "min": [
+    -0.016,
+    0.0,
+    -0.131
+   ]
+  },
+  "guns/AssaultRifle_5": {
+   "kind": "gun",
+   "family": "AssaultRifle",
+   "length": 0.9,
+   "muzzle": [
+    0,
+    0.9,
+    0.058
+   ],
+   "top": [
+    0,
+    0.378,
+    0.133
+   ],
+   "under": [
+    0,
+    0.63,
+    -0.04
+   ],
+   "grip": [
+    0,
+    0.27,
+    -0.066
+   ],
+   "size": [
+    0.033,
+    0.9,
+    0.266
+   ],
+   "min": [
+    -0.016,
+    0.0,
+    -0.133
+   ]
+  },
+  "guns/Bullpup_1": {
+   "kind": "gun",
+   "family": "Bullpup",
+   "length": 0.72,
+   "muzzle": [
+    0,
+    0.72,
+    0.047
+   ],
+   "top": [
+    0,
+    0.302,
+    0.106
+   ],
+   "under": [
+    0,
+    0.504,
+    -0.032
+   ],
+   "grip": [
+    0,
+    0.216,
+    -0.053
+   ],
+   "size": [
+    0.043,
+    0.72,
+    0.211
+   ],
+   "min": [
+    -0.021,
+    0.0,
+    -0.106
+   ]
+  },
+  "guns/Bullpup_2": {
+   "kind": "gun",
+   "family": "Bullpup",
+   "length": 0.72,
+   "muzzle": [
+    0,
+    0.72,
+    0.064
+   ],
+   "top": [
+    0,
+    0.302,
+    0.145
+   ],
+   "under": [
+    0,
+    0.504,
+    -0.044
+   ],
+   "grip": [
+    0,
+    0.216,
+    -0.073
+   ],
+   "size": [
+    0.059,
+    0.72,
+    0.291
+   ],
+   "min": [
+    -0.03,
+    0.0,
+    -0.145
+   ]
+  },
+  "guns/Bullpup_3": {
+   "kind": "gun",
+   "family": "Bullpup",
+   "length": 0.72,
+   "muzzle": [
+    0,
+    0.72,
+    0.059
+   ],
+   "top": [
+    0,
+    0.302,
+    0.133
+   ],
+   "under": [
+    0,
+    0.504,
+    -0.04
+   ],
+   "grip": [
+    0,
+    0.216,
+    -0.067
+   ],
+   "size": [
+    0.052,
+    0.72,
+    0.267
+   ],
+   "min": [
+    -0.026,
+    0.0,
+    -0.133
+   ]
+  },
+  "guns/Pistol_1": {
+   "kind": "gun",
+   "family": "Pistol",
+   "length": 0.22,
+   "muzzle": [
+    0,
+    0.22,
+    0.031
+   ],
+   "top": [
+    0,
+    0.092,
+    0.07
+   ],
+   "under": [
+    0,
+    0.154,
+    -0.021
+   ],
+   "grip": [
+    0,
+    0.055,
+    -0.035
+   ],
+   "size": [
+    0.039,
+    0.22,
+    0.14
+   ],
+   "min": [
+    -0.02,
+    0.0,
+    -0.07
+   ]
+  },
+  "guns/Pistol_2": {
+   "kind": "gun",
+   "family": "Pistol",
+   "length": 0.22,
+   "muzzle": [
+    0,
+    0.22,
+    0.031
+   ],
+   "top": [
+    0,
+    0.092,
+    0.07
+   ],
+   "under": [
+    0,
+    0.154,
+    -0.021
+   ],
+   "grip": [
+    0,
+    0.055,
+    -0.035
+   ],
+   "size": [
+    0.039,
+    0.22,
+    0.14
+   ],
+   "min": [
+    -0.02,
+    0.0,
+    -0.07
+   ]
+  },
+  "guns/Pistol_3": {
+   "kind": "gun",
+   "family": "Pistol",
+   "length": 0.22,
+   "muzzle": [
+    0,
+    0.22,
+    0.034
+   ],
+   "top": [
+    0,
+    0.092,
+    0.077
+   ],
+   "under": [
+    0,
+    0.154,
+    -0.023
+   ],
+   "grip": [
+    0,
+    0.055,
+    -0.039
+   ],
+   "size": [
+    0.039,
+    0.22,
+    0.154
+   ],
+   "min": [
+    -0.02,
+    0.0,
+    -0.077
+   ]
+  },
+  "guns/Pistol_4": {
+   "kind": "gun",
+   "family": "Pistol",
+   "length": 0.22,
+   "muzzle": [
+    0,
+    0.22,
+    0.04
+   ],
+   "top": [
+    0,
+    0.092,
+    0.091
+   ],
+   "under": [
+    0,
+    0.154,
+    -0.027
+   ],
+   "grip": [
+    0,
+    0.055,
+    -0.045
+   ],
+   "size": [
+    0.034,
+    0.22,
+    0.181
+   ],
+   "min": [
+    -0.017,
+    0.0,
+    -0.091
+   ]
+  },
+  "guns/Pistol_5": {
+   "kind": "gun",
+   "family": "Pistol",
+   "length": 0.22,
+   "muzzle": [
+    0,
+    0.22,
+    0.032
+   ],
+   "top": [
+    0,
+    0.092,
+    0.072
+   ],
+   "under": [
+    0,
+    0.154,
+    -0.022
+   ],
+   "grip": [
+    0,
+    0.055,
+    -0.036
+   ],
+   "size": [
+    0.033,
+    0.22,
+    0.145
+   ],
+   "min": [
+    -0.017,
+    0.0,
+    -0.072
+   ]
+  },
+  "guns/Pistol_6": {
+   "kind": "gun",
+   "family": "Pistol",
+   "length": 0.22,
+   "muzzle": [
+    0,
+    0.22,
+    0.023
+   ],
+   "top": [
+    0,
+    0.092,
+    0.052
+   ],
+   "under": [
+    0,
+    0.154,
+    -0.016
+   ],
+   "grip": [
+    0,
+    0.055,
+    -0.026
+   ],
+   "size": [
+    0.028,
+    0.22,
+    0.104
+   ],
+   "min": [
+    -0.014,
+    0.0,
+    -0.052
+   ]
+  },
+  "guns/Revolver_1": {
+   "kind": "gun",
+   "family": "Revolver",
+   "length": 0.3,
+   "muzzle": [
+    0,
+    0.3,
+    0.03
+   ],
+   "top": [
+    0,
+    0.126,
+    0.067
+   ],
+   "under": [
+    0,
+    0.21,
+    -0.02
+   ],
+   "grip": [
+    0,
+    0.075,
+    -0.034
+   ],
+   "size": [
+    0.045,
+    0.3,
+    0.135
+   ],
+   "min": [
+    -0.022,
+    0.0,
+    -0.067
+   ]
+  },
+  "guns/Revolver_2": {
+   "kind": "gun",
+   "family": "Revolver",
+   "length": 0.3,
+   "muzzle": [
+    0,
+    0.3,
+    0.031
+   ],
+   "top": [
+    0,
+    0.126,
+    0.071
+   ],
+   "under": [
+    0,
+    0.21,
+    -0.021
+   ],
+   "grip": [
+    0,
+    0.075,
+    -0.036
+   ],
+   "size": [
+    0.045,
+    0.3,
+    0.143
+   ],
+   "min": [
+    -0.022,
+    0.0,
+    -0.071
+   ]
+  },
+  "guns/Revolver_3": {
+   "kind": "gun",
+   "family": "Revolver",
+   "length": 0.3,
+   "muzzle": [
+    0,
+    0.3,
+    0.033
+   ],
+   "top": [
+    0,
+    0.126,
+    0.074
+   ],
+   "under": [
+    0,
+    0.21,
+    -0.022
+   ],
+   "grip": [
+    0,
+    0.075,
+    -0.037
+   ],
+   "size": [
+    0.044,
+    0.3,
+    0.148
+   ],
+   "min": [
+    -0.022,
+    0.0,
+    -0.074
+   ]
+  },
+  "guns/Revolver_4": {
+   "kind": "gun",
+   "family": "Revolver",
+   "length": 0.3,
+   "muzzle": [
+    0,
+    0.3,
+    0.041
+   ],
+   "top": [
+    0,
+    0.126,
+    0.093
+   ],
+   "under": [
+    0,
+    0.21,
+    -0.028
+   ],
+   "grip": [
+    0,
+    0.075,
+    -0.047
+   ],
+   "size": [
+    0.06,
+    0.3,
+    0.186
+   ],
+   "min": [
+    -0.03,
+    0.0,
+    -0.093
+   ]
+  },
+  "guns/Revolver_5": {
+   "kind": "gun",
+   "family": "Revolver",
+   "length": 0.3,
+   "muzzle": [
+    0,
+    0.3,
+    0.033
+   ],
+   "top": [
+    0,
+    0.126,
+    0.076
+   ],
+   "under": [
+    0,
+    0.21,
+    -0.023
+   ],
+   "grip": [
+    0,
+    0.075,
+    -0.038
+   ],
+   "size": [
+    0.046,
+    0.3,
+    0.152
+   ],
+   "min": [
+    -0.023,
+    0.0,
+    -0.076
+   ]
+  },
+  "guns/Shotgun_1": {
+   "kind": "gun",
+   "family": "Shotgun",
+   "length": 1.0,
+   "muzzle": [
+    0,
+    1.0,
+    0.04
+   ],
+   "top": [
+    0,
+    0.42,
+    0.09
+   ],
+   "under": [
+    0,
+    0.7,
+    -0.027
+   ],
+   "grip": [
+    0,
+    0.3,
+    -0.045
+   ],
+   "size": [
+    0.047,
+    1.0,
+    0.181
+   ],
+   "min": [
+    -0.024,
+    0.0,
+    -0.09
+   ]
+  },
+  "guns/Shotgun_2": {
+   "kind": "gun",
+   "family": "Shotgun",
+   "length": 1.0,
+   "muzzle": [
+    0,
+    1.0,
+    0.036
+   ],
+   "top": [
+    0,
+    0.42,
+    0.082
+   ],
+   "under": [
+    0,
+    0.7,
+    -0.025
+   ],
+   "grip": [
+    0,
+    0.3,
+    -0.041
+   ],
+   "size": [
+    0.043,
+    1.0,
+    0.164
+   ],
+   "min": [
+    -0.021,
+    0.0,
+    -0.082
+   ]
+  },
+  "guns/Shotgun_3": {
+   "kind": "gun",
+   "family": "Shotgun",
+   "length": 1.0,
+   "muzzle": [
+    0,
+    1.0,
+    0.036
+   ],
+   "top": [
+    0,
+    0.42,
+    0.081
+   ],
+   "under": [
+    0,
+    0.7,
+    -0.024
+   ],
+   "grip": [
+    0,
+    0.3,
+    -0.041
+   ],
+   "size": [
+    0.043,
+    1.0,
+    0.163
+   ],
+   "min": [
+    -0.021,
+    0.0,
+    -0.081
+   ]
+  },
+  "guns/Shotgun_4": {
+   "kind": "gun",
+   "family": "Shotgun",
+   "length": 1.0,
+   "muzzle": [
+    0,
+    1.0,
+    0.037
+   ],
+   "top": [
+    0,
+    0.42,
+    0.085
+   ],
+   "under": [
+    0,
+    0.7,
+    -0.026
+   ],
+   "grip": [
+    0,
+    0.3,
+    -0.043
+   ],
+   "size": [
+    0.037,
+    1.0,
+    0.17
+   ],
+   "min": [
+    -0.018,
+    0.0,
+    -0.085
+   ]
+  },
+  "guns/Shotgun_SawedOff": {
+   "kind": "gun",
+   "family": "Shotgun",
+   "length": 0.6,
+   "muzzle": [
+    0,
+    0.6,
+    0.037
+   ],
+   "top": [
+    0,
+    0.252,
+    0.083
+   ],
+   "under": [
+    0,
+    0.42,
+    -0.025
+   ],
+   "grip": [
+    0,
+    0.18,
+    -0.041
+   ],
+   "size": [
+    0.069,
+    0.6,
+    0.166
+   ],
+   "min": [
+    -0.034,
+    0.0,
+    -0.083
+   ]
+  },
+  "guns/Shotgun_ShortStock": {
+   "kind": "gun",
+   "family": "Shotgun",
+   "length": 1.0,
+   "muzzle": [
+    0,
+    1.0,
+    0.048
+   ],
+   "top": [
+    0,
+    0.42,
+    0.108
+   ],
+   "under": [
+    0,
+    0.7,
+    -0.032
+   ],
+   "grip": [
+    0,
+    0.3,
+    -0.054
+   ],
+   "size": [
+    0.055,
+    1.0,
+    0.216
+   ],
+   "min": [
+    -0.028,
+    0.0,
+    -0.108
+   ]
+  },
+  "guns/SniperRifle_1": {
+   "kind": "gun",
+   "family": "SniperRifle",
+   "length": 1.2,
+   "muzzle": [
+    0,
+    1.2,
+    0.054
+   ],
+   "top": [
+    0,
+    0.504,
+    0.122
+   ],
+   "under": [
+    0,
+    0.84,
+    -0.037
+   ],
+   "grip": [
+    0,
+    0.36,
+    -0.061
+   ],
+   "size": [
+    0.076,
+    1.2,
+    0.244
+   ],
+   "min": [
+    -0.038,
+    0.0,
+    -0.122
+   ]
+  },
+  "guns/SniperRifle_2": {
+   "kind": "gun",
+   "family": "SniperRifle",
+   "length": 1.2,
+   "muzzle": [
+    0,
+    1.2,
+    0.054
+   ],
+   "top": [
+    0,
+    0.504,
+    0.122
+   ],
+   "under": [
+    0,
+    0.84,
+    -0.037
+   ],
+   "grip": [
+    0,
+    0.36,
+    -0.061
+   ],
+   "size": [
+    0.078,
+    1.2,
+    0.244
+   ],
+   "min": [
+    -0.039,
+    0.0,
+    -0.122
+   ]
+  },
+  "guns/SniperRifle_3": {
+   "kind": "gun",
+   "family": "SniperRifle",
+   "length": 1.2,
+   "muzzle": [
+    0,
+    1.2,
+    0.044
+   ],
+   "top": [
+    0,
+    0.504,
+    0.099
+   ],
+   "under": [
+    0,
+    0.84,
+    -0.03
+   ],
+   "grip": [
+    0,
+    0.36,
+    -0.05
+   ],
+   "size": [
+    0.074,
+    1.2,
+    0.199
+   ],
+   "min": [
+    -0.037,
+    0.0,
+    -0.099
+   ]
+  },
+  "guns/SniperRifle_4": {
+   "kind": "gun",
+   "family": "SniperRifle",
+   "length": 1.2,
+   "muzzle": [
+    0,
+    1.2,
+    0.056
+   ],
+   "top": [
+    0,
+    0.504,
+    0.128
+   ],
+   "under": [
+    0,
+    0.84,
+    -0.038
+   ],
+   "grip": [
+    0,
+    0.36,
+    -0.064
+   ],
+   "size": [
+    0.087,
+    1.2,
+    0.255
+   ],
+   "min": [
+    -0.043,
+    0.0,
+    -0.128
+   ]
+  },
+  "guns/SniperRifle_5": {
+   "kind": "gun",
+   "family": "SniperRifle",
+   "length": 1.2,
+   "muzzle": [
+    0,
+    1.2,
+    0.079
+   ],
+   "top": [
+    0,
+    0.504,
+    0.18
+   ],
+   "under": [
+    0,
+    0.84,
+    -0.054
+   ],
+   "grip": [
+    0,
+    0.36,
+    -0.09
+   ],
+   "size": [
+    0.236,
+    1.2,
+    0.36
+   ],
+   "min": [
+    -0.118,
+    0.0,
+    -0.18
+   ]
+  },
+  "guns/SniperRifle_6": {
+   "kind": "gun",
+   "family": "SniperRifle",
+   "length": 1.2,
+   "muzzle": [
+    0,
+    1.2,
+    0.056
+   ],
+   "top": [
+    0,
+    0.504,
+    0.126
+   ],
+   "under": [
+    0,
+    0.84,
+    -0.038
+   ],
+   "grip": [
+    0,
+    0.36,
+    -0.063
+   ],
+   "size": [
+    0.082,
+    1.2,
+    0.253
+   ],
+   "min": [
+    -0.041,
+    0.0,
+    -0.126
+   ]
+  },
+  "guns/SubmachineGun_1": {
+   "kind": "gun",
+   "family": "SubmachineGun",
+   "length": 0.5,
+   "muzzle": [
+    0,
+    0.5,
+    0.068
+   ],
+   "top": [
+    0,
+    0.21,
+    0.154
+   ],
+   "under": [
+    0,
+    0.35,
+    -0.046
+   ],
+   "grip": [
+    0,
+    0.15,
+    -0.077
+   ],
+   "size": [
+    0.057,
+    0.5,
+    0.308
+   ],
+   "min": [
+    -0.029,
+    0.0,
+    -0.154
+   ]
+  },
+  "guns/SubmachineGun_2": {
+   "kind": "gun",
+   "family": "SubmachineGun",
+   "length": 0.5,
+   "muzzle": [
+    0,
+    0.5,
+    0.05
+   ],
+   "top": [
+    0,
+    0.21,
+    0.114
+   ],
+   "under": [
+    0,
+    0.35,
+    -0.034
+   ],
+   "grip": [
+    0,
+    0.15,
+    -0.057
+   ],
+   "size": [
+    0.039,
+    0.5,
+    0.228
+   ],
+   "min": [
+    -0.02,
+    0.0,
+    -0.114
+   ]
+  },
+  "guns/SubmachineGun_3": {
+   "kind": "gun",
+   "family": "SubmachineGun",
+   "length": 0.5,
+   "muzzle": [
+    0,
+    0.5,
+    0.042
+   ],
+   "top": [
+    0,
+    0.21,
+    0.095
+   ],
+   "under": [
+    0,
+    0.35,
+    -0.029
+   ],
+   "grip": [
+    0,
+    0.15,
+    -0.048
+   ],
+   "size": [
+    0.04,
+    0.5,
+    0.19
+   ],
+   "min": [
+    -0.02,
+    0.0,
+    -0.095
+   ]
+  },
+  "guns/SubmachineGun_4": {
+   "kind": "gun",
+   "family": "SubmachineGun",
+   "length": 0.5,
+   "muzzle": [
+    0,
+    0.5,
+    0.071
+   ],
+   "top": [
+    0,
+    0.21,
+    0.161
+   ],
+   "under": [
+    0,
+    0.35,
+    -0.048
+   ],
+   "grip": [
+    0,
+    0.15,
+    -0.08
+   ],
+   "size": [
+    0.062,
+    0.5,
+    0.321
+   ],
+   "min": [
+    -0.031,
+    0.0,
+    -0.161
+   ]
+  },
+  "guns/SubmachineGun_5": {
+   "kind": "gun",
+   "family": "SubmachineGun",
+   "length": 0.5,
+   "muzzle": [
+    0,
+    0.5,
+    0.038
+   ],
+   "top": [
+    0,
+    0.21,
+    0.086
+   ],
+   "under": [
+    0,
+    0.35,
+    -0.026
+   ],
+   "grip": [
+    0,
+    0.15,
+    -0.043
+   ],
+   "size": [
+    0.032,
+    0.5,
+    0.172
+   ],
+   "min": [
+    -0.016,
+    0.0,
+    -0.086
+   ]
+  },
+  "props/Barrel": {
+   "kind": "prop",
+   "size": [
+    0.704,
+    0.704,
+    1.145
+   ],
+   "min": [
+    -0.352,
+    -0.352,
+    0.002
+   ]
+  },
+  "props/Chest": {
+   "kind": "prop",
+   "size": [
+    0.64,
+    0.483,
+    0.406
+   ],
+   "min": [
+    -0.32,
+    -0.241,
+    0.003
+   ]
+  },
+  "props/Chest_Special": {
+   "kind": "prop",
+   "size": [
+    0.852,
+    0.483,
+    0.406
+   ],
+   "min": [
+    -0.426,
+    -0.241,
+    0.003
+   ]
+  },
+  "props/CinderBlock": {
+   "kind": "prop",
+   "size": [
+    0.472,
+    0.215,
+    0.227
+   ],
+   "min": [
+    -0.236,
+    -0.107,
+    0.003
+   ]
+  },
+  "props/Container_Green": {
+   "kind": "prop",
+   "size": [
+    5.709,
+    2.561,
+    2.603
+   ],
+   "min": [
+    -2.854,
+    -1.28,
+    0.038
+   ]
+  },
+  "props/Container_Red": {
+   "kind": "prop",
+   "size": [
+    5.708,
+    2.559,
+    2.603
+   ],
+   "min": [
+    -2.83,
+    -1.286,
+    -0.009
+   ]
+  },
+  "props/Couch": {
+   "kind": "prop",
+   "size": [
+    3.013,
+    1.214,
+    1.244
+   ],
+   "min": [
+    -1.507,
+    -0.441,
+    0.003
+   ]
+  },
+  "props/FireHydrant": {
+   "kind": "prop",
+   "size": [
+    0.515,
+    0.399,
+    0.772
+   ],
+   "min": [
+    -0.258,
+    -0.217,
+    0.001
+   ]
+  },
+  "props/Pallet": {
+   "kind": "prop",
+   "size": [
+    0.893,
+    1.217,
+    0.14
+   ],
+   "min": [
+    -0.436,
+    -0.608,
+    0.002
+   ]
+  },
+  "props/Pallet_Broken": {
+   "kind": "prop",
+   "size": [
+    0.917,
+    1.222,
+    0.164
+   ],
+   "min": [
+    -0.461,
+    -0.612,
+    0.0
+   ]
+  },
+  "props/Pipes": {
+   "kind": "prop",
+   "size": [
+    0.748,
+    3.355,
+    0.671
+   ],
+   "min": [
+    -0.374,
+    -1.678,
+    0.005
+   ]
+  },
+  "props/PlasticBarrier": {
+   "kind": "prop",
+   "size": [
+    1.035,
+    0.334,
+    0.6
+   ],
+   "min": [
+    -0.518,
+    -0.167,
+    -0.0
+   ]
+  },
+  "props/StreetLights": {
+   "kind": "prop",
+   "size": [
+    0.364,
+    2.925,
+    6.643
+   ],
+   "min": [
+    -0.182,
+    -2.755,
+    -0.015
+   ]
+  },
+  "props/Street_4Way": {
+   "kind": "prop",
+   "size": [
+    8.0,
+    8.0,
+    0.1
+   ],
+   "min": [
+    -4.0,
+    -4.0,
+    0.0
+   ]
+  },
+  "props/Street_Straight": {
+   "kind": "prop",
+   "size": [
+    8.0,
+    8.0,
+    0.12
+   ],
+   "min": [
+    -4.0,
+    -4.0,
+    0.0
+   ]
+  },
+  "props/Street_Straight_Crack1": {
+   "kind": "prop",
+   "size": [
+    8.0,
+    8.0,
+    0.285
+   ],
+   "min": [
+    -4.0,
+    -4.0,
+    -0.165
+   ]
+  },
+  "props/Street_Straight_Crack2": {
+   "kind": "prop",
+   "size": [
+    8.0,
+    8.0,
+    0.58
+   ],
+   "min": [
+    -4.0,
+    -4.0,
+    -0.238
+   ]
+  },
+  "props/Street_T": {
+   "kind": "prop",
+   "size": [
+    8.0,
+    8.0,
+    0.1
+   ],
+   "min": [
+    -4.0,
+    -4.0,
+    0.0
+   ]
+  },
+  "props/Street_Turn": {
+   "kind": "prop",
+   "size": [
+    8.0,
+    8.0,
+    0.12
+   ],
+   "min": [
+    -4.0,
+    -4.0,
+    0.0
+   ]
+  },
+  "props/TownSign": {
+   "kind": "prop",
+   "size": [
+    5.985,
+    1.735,
+    5.352
+   ],
+   "min": [
+    -5.526,
+    -0.868,
+    -0.022
+   ]
+  },
+  "props/TrafficBarrier_1": {
+   "kind": "prop",
+   "size": [
+    1.555,
+    0.881,
+    1.112
+   ],
+   "min": [
+    -0.778,
+    -0.44,
+    0.006
+   ]
+  },
+  "props/TrafficBarrier_2": {
+   "kind": "prop",
+   "size": [
+    1.555,
+    0.78,
+    0.802
+   ],
+   "min": [
+    -0.778,
+    -0.39,
+    0.003
+   ]
+  },
+  "props/TrafficCone_1": {
+   "kind": "prop",
+   "size": [
+    0.522,
+    0.522,
+    0.673
+   ],
+   "min": [
+    -0.261,
+    -0.261,
+    -0.017
+   ]
+  },
+  "props/TrafficCone_2": {
+   "kind": "prop",
+   "size": [
+    0.595,
+    0.595,
+    0.736
+   ],
+   "min": [
+    -0.298,
+    -0.298,
+    -0.008
+   ]
+  },
+  "props/TrafficLight_1": {
+   "kind": "prop",
+   "size": [
+    1.513,
+    1.511,
+    4.664
+   ],
+   "min": [
+    -0.172,
+    -1.341,
+    -0.015
+   ]
+  },
+  "props/TrafficLight_2": {
+   "kind": "prop",
+   "size": [
+    5.338,
+    1.923,
+    4.664
+   ],
+   "min": [
+    -3.996,
+    -1.341,
+    -0.015
+   ]
+  },
+  "props/TrashBag_1": {
+   "kind": "prop",
+   "size": [
+    0.497,
+    0.503,
+    0.564
+   ],
+   "min": [
+    -0.249,
+    -0.253,
+    -0.011
+   ]
+  },
+  "props/TrashBag_2": {
+   "kind": "prop",
+   "size": [
+    0.906,
+    0.524,
+    0.53
+   ],
+   "min": [
+    -0.489,
+    -0.288,
+    -0.008
+   ]
+  },
+  "props/WaterTower": {
+   "kind": "prop",
+   "size": [
+    2.646,
+    2.708,
+    9.38
+   ],
+   "min": [
+    -1.323,
+    -1.354,
+    -0.032
+   ]
+  },
+  "props/Wheel": {
+   "kind": "prop",
+   "size": [
+    0.573,
+    0.573,
+    0.204
+   ],
+   "min": [
+    -0.286,
+    -0.286,
+    0.008
+   ]
+  },
+  "props/Wheels_Stack": {
+   "kind": "prop",
+   "size": [
+    0.658,
+    0.572,
+    0.611
+   ],
+   "min": [
+    -0.35,
+    -0.285,
+    -0.0
+   ]
+  },
+  "props/Vehicle_Pickup": {
+   "kind": "prop",
+   "size": [
+    2.312,
+    5.18,
+    1.848
+   ],
+   "min": [
+    -1.156,
+    -2.693,
+    -0.006
+   ]
+  },
+  "props/Vehicle_Pickup_Armored": {
+   "kind": "prop",
+   "size": [
+    2.65,
+    5.505,
+    1.997
+   ],
+   "min": [
+    -1.325,
+    -2.908,
+    -0.006
+   ]
+  },
+  "props/Vehicle_Sports": {
+   "kind": "prop",
+   "size": [
+    2.671,
+    5.655,
+    1.865
+   ],
+   "min": [
+    -1.335,
+    -2.939,
+    -0.012
+   ]
+  },
+  "props/Vehicle_Sports_Armored": {
+   "kind": "prop",
+   "size": [
+    2.954,
+    5.655,
+    1.865
+   ],
+   "min": [
+    -1.477,
+    -2.939,
+    -0.012
+   ]
+  },
+  "props/Vehicle_Truck": {
+   "kind": "prop",
+   "size": [
+    2.709,
+    5.256,
+    2.884
+   ],
+   "min": [
+    -1.355,
+    -2.193,
+    0.001
+   ]
+  },
+  "props/Vehicle_Truck_Armored": {
+   "kind": "prop",
+   "size": [
+    2.976,
+    5.586,
+    2.904
+   ],
+   "min": [
+    -1.488,
+    -2.524,
+    0.001
+   ]
+  },
+  "furniture/bookcaseOpen": {
+   "kind": "furniture",
+   "size": [
+    0.88,
+    0.55,
+    1.936
+   ],
+   "min": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "furniture/bookcaseOpenLow": {
+   "kind": "furniture",
+   "size": [
+    0.88,
+    0.55,
+    0.88
+   ],
+   "min": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "furniture/bookcaseClosedWide": {
+   "kind": "furniture",
+   "size": [
+    1.76,
+    0.55,
+    1.738
+   ],
+   "min": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "furniture/kitchenBar": {
+   "kind": "furniture",
+   "size": [
+    0.946,
+    0.462,
+    0.924
+   ],
+   "min": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "furniture/kitchenBarEnd": {
+   "kind": "furniture",
+   "size": [
+    0.223,
+    0.462,
+    0.924
+   ],
+   "min": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "furniture/kitchenCabinet": {
+   "kind": "furniture",
+   "size": [
+    0.946,
+    0.99,
+    0.99
+   ],
+   "min": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "furniture/pottedPlant": {
+   "kind": "furniture",
+   "size": [
+    0.467,
+    0.531,
+    1.439
+   ],
+   "min": [
+    -0.233,
+    -0.266,
+    0.0
+   ]
+  },
+  "furniture/plantSmall1": {
+   "kind": "furniture",
+   "size": [
+    0.208,
+    0.208,
+    0.308
+   ],
+   "min": [
+    -0.104,
+    -0.104,
+    0.0
+   ]
+  },
+  "furniture/plantSmall2": {
+   "kind": "furniture",
+   "size": [
+    0.208,
+    0.208,
+    0.308
+   ],
+   "min": [
+    -0.104,
+    -0.104,
+    0.0
+   ]
+  },
+  "furniture/plantSmall3": {
+   "kind": "furniture",
+   "size": [
+    0.216,
+    0.187,
+    0.319
+   ],
+   "min": [
+    -0.108,
+    -0.093,
+    0.0
+   ]
+  },
+  "furniture/lampSquareFloor": {
+   "kind": "furniture",
+   "size": [
+    0.264,
+    0.264,
+    1.892
+   ],
+   "min": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "furniture/lampRoundFloor": {
+   "kind": "furniture",
+   "size": [
+    0.334,
+    0.386,
+    1.892
+   ],
+   "min": [
+    -0.035,
+    -0.061,
+    0.0
+   ]
+  },
+  "furniture/lampSquareCeiling": {
+   "kind": "furniture",
+   "size": [
+    0.264,
+    0.264,
+    0.506
+   ],
+   "min": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "furniture/lampWall": {
+   "kind": "furniture",
+   "size": [
+    0.499,
+    0.331,
+    0.204
+   ],
+   "min": [
+    -0.249,
+    -0.331,
+    0.0
+   ]
+  },
+  "furniture/rugRectangle": {
+   "kind": "furniture",
+   "size": [
+    3.454,
+    2.024,
+    0.022
+   ],
+   "min": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "furniture/rugRound": {
+   "kind": "furniture",
+   "size": [
+    2.024,
+    2.024,
+    0.022
+   ],
+   "min": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "furniture/rugDoormat": {
+   "kind": "furniture",
+   "size": [
+    0.944,
+    0.521,
+    0.022
+   ],
+   "min": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "furniture/tableCross": {
+   "kind": "furniture",
+   "size": [
+    1.875,
+    0.984,
+    0.764
+   ],
+   "min": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "furniture/table": {
+   "kind": "furniture",
+   "size": [
+    1.851,
+    0.984,
+    0.719
+   ],
+   "min": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "furniture/desk": {
+   "kind": "furniture",
+   "size": [
+    1.616,
+    0.863,
+    0.846
+   ],
+   "min": [
+    -0.022,
+    -0.027,
+    0.0
+   ]
+  },
+  "furniture/chairDesk": {
+   "kind": "furniture",
+   "size": [
+    0.737,
+    0.691,
+    1.337
+   ],
+   "min": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "furniture/stoolBar": {
+   "kind": "furniture",
+   "size": [
+    0.584,
+    0.506,
+    0.957
+   ],
+   "min": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "furniture/cardboardBoxOpen": {
+   "kind": "furniture",
+   "size": [
+    0.818,
+    0.468,
+    0.618
+   ],
+   "min": [
+    -0.175,
+    -0.0,
+    0.0
+   ]
+  },
+  "furniture/cardboardBoxClosed": {
+   "kind": "furniture",
+   "size": [
+    0.468,
+    0.468,
+    0.618
+   ],
+   "min": [
+    0.0,
+    -0.0,
+    0.0
+   ]
+  },
+  "furniture/trashcan": {
+   "kind": "furniture",
+   "size": [
+    0.457,
+    0.515,
+    0.941
+   ],
+   "min": [
+    -0.228,
+    -0.269,
+    -0.0
+   ]
+  },
+  "furniture/radio": {
+   "kind": "furniture",
+   "size": [
+    0.693,
+    0.215,
+    0.502
+   ],
+   "min": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "furniture/speaker": {
+   "kind": "furniture",
+   "size": [
+    0.326,
+    0.326,
+    1.4
+   ],
+   "min": [
+    -0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "furniture/coatRackStanding": {
+   "kind": "furniture",
+   "size": [
+    0.6,
+    0.6,
+    1.694
+   ],
+   "min": [
+    -0.3,
+    -0.3,
+    0.0
+   ]
+  },
+  "furniture/sideTable": {
+   "kind": "furniture",
+   "size": [
+    1.176,
+    0.484,
+    0.846
+   ],
+   "min": [
+    -0.022,
+    -0.022,
+    0.0
+   ]
+  },
+  "furniture/books": {
+   "kind": "furniture",
+   "size": [
+    0.331,
+    0.208,
+    0.229
+   ],
+   "min": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "furniture/laptop": {
+   "kind": "furniture",
+   "size": [
+    0.581,
+    0.528,
+    0.356
+   ],
+   "min": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "furniture/computerScreen": {
+   "kind": "furniture",
+   "size": [
+    0.864,
+    0.229,
+    0.647
+   ],
+   "min": [
+    -0.0,
+    0.0,
+    -0.0
+   ]
+  },
+  "furniture/televisionVintage": {
+   "kind": "furniture",
+   "size": [
+    0.902,
+    0.594,
+    0.594
+   ],
+   "min": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "furniture/benchCushion": {
+   "kind": "furniture",
+   "size": [
+    0.88,
+    0.44,
+    1.012
+   ],
+   "min": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "furniture/ceilingFan": {
+   "kind": "furniture",
+   "size": [
+    1.0,
+    1.155,
+    0.294
+   ],
+   "min": [
+    -0.378,
+    -0.575,
+    -0.294
+   ]
+  }
+ }
+}
