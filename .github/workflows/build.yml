@@ -20,7 +20,9 @@ jobs:
         with:
           python-version: "3.12"
       - run: bash mac/build_mac_app.sh
-      - uses: actions/upload-artifact@v5
+      - name: Self-test the built app on this Mac (engine, models, animations)
+        run: dist/LastArmory.app/Contents/MacOS/LastArmory --selftest
+      - uses: actions/upload-artifact@v6
         with:
           name: LastArmory-macOS-${{ matrix.arch }}
           path: dist/LastArmory-macOS.zip
@@ -37,7 +39,10 @@ jobs:
       - run: python -m PyInstaller --noconfirm --onefile --console --name ArmoryServer --exclude-module panda3d --exclude-module direct --distpath dist/LastArmory ArmoryServer.py
       - shell: bash
         run: cp -r mods README.md MODDING.md dist/LastArmory/
-      - uses: actions/upload-artifact@v5
+      - name: Self-test the built exe (engine, models, animations)
+        shell: bash
+        run: dist/LastArmory/LastArmory.exe --selftest
+      - uses: actions/upload-artifact@v6
         with:
           name: LastArmory-Windows
           path: dist/LastArmory

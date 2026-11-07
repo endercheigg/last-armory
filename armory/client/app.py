@@ -41,6 +41,8 @@ def configure(extra=""):
         os.environ["PATH"] = pdir + os.pathsep + os.environ.get("PATH", "")
     loadPrcFileData("", f"""
 window-title LAST ARMORY
+notify-level warning
+default-directnotify-level warning
 win-size 1280 720
 framebuffer-multisample 1
 multisamples 4
