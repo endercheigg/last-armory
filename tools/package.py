@@ -6,7 +6,7 @@ import zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DIST = os.path.join(ROOT, "dist")
-SKIP_DIRS = {"__pycache__", "userdata", "dist", "build", ".buildenv", ".git"}
+SKIP_DIRS = {"__pycache__", "userdata", "dist", "build", ".buildenv", ".git", "assets_src"}
 EXEC = {".command", ".sh"}
 
 

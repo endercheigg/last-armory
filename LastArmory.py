@@ -13,7 +13,7 @@ sys.path.insert(0, ROOT)
 def selftest():
     """Headless check that the engine, models and animations load (used by CI and after packaging)."""
     from panda3d.core import loadPrcFileData
-    loadPrcFileData("", "window-type none\naudio-library-name null")
+    loadPrcFileData("", "window-type none\naudio-library-name null\nnotify-level warning\ndefault-directnotify-level warning")
     from direct.showbase.ShowBase import ShowBase
     from armory.client import assets
     from armory.content import load_content
