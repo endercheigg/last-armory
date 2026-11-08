@@ -1,6 +1,6 @@
 {
  "id": "foundry",
- "name": "Old Foundry",
+ "name": "The Wasteland - Old Foundry",
  "size": [
   60,
   60
@@ -529,5 +529,91 @@
    "z": 0,
    "h": 0
   }
+ ],
+ "night": {
+  "skyColor": "#0b0f1a",
+  "fogColor": "#141a28",
+  "ambient": "#4a5470",
+  "lightColor": "#9ab0ff",
+  "fogDensity": 0.022
+ },
+ "day": {
+  "skyColor": "#9fb6cc",
+  "fogColor": "#b3c2d0",
+  "ambient": "#8a90a0",
+  "lightColor": "#fff0d8",
+  "fogDensity": 0.008
+ },
+ "exits": [
+  [
+   2.6,
+   2.6
+  ]
+ ],
+ "loot": [
+  [
+   6,
+   20
+  ],
+  [
+   54,
+   20
+  ],
+  [
+   6,
+   40
+  ],
+  [
+   54,
+   40
+  ],
+  [
+   20,
+   6
+  ],
+  [
+   40,
+   6
+  ],
+  [
+   20,
+   54
+  ],
+  [
+   40,
+   54
+  ],
+  [
+   30,
+   36
+  ],
+  [
+   16,
+   30
+  ],
+  [
+   44,
+   30
+  ]
+ ],
+ "entry": [
+  [
+   4.5,
+   4.5,
+   0,
+   -45
+  ],
+  [
+   5.5,
+   3.5,
+   0,
+   -40
+  ],
+  [
+   3.5,
+   5.5,
+   0,
+   -50
+  ]
  ]
 }

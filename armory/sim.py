@@ -7,15 +7,16 @@ import random
 # ---- arena player
 GRAVITY = 22.0
 JUMP_V = 8.0
-PLAYER_R = 0.4
-PLAYER_H = 1.8
-EYE_H = 1.55
-BASE_SPEED = 7.0
+PLAYER_R = 0.38
+PLAYER_H = 1.92      # realistic adult height (taller characters)
+EYE_H = 1.70
+BASE_SPEED = 6.5
 STEP_H = 0.55
-BODY_R = 0.45
-BODY_H = 1.42
-HEAD_Z = 1.62
-HEAD_R = 0.26
+BODY_R = 0.34
+BODY_H = 1.56
+HEAD_Z = 1.74
+HEAD_R = 0.15        # small, Valorant-like head hitbox
+LEG_Z = 0.9          # hits below this height count as legs (x0.85)
 
 
 

@@ -2448,6 +2448,97 @@
     -0.575,
     -0.294
    ]
+  },
+  "furniture/bedSingle": {
+   "kind": "furniture",
+   "size": [
+    1.256,
+    2.475,
+    0.825
+   ],
+   "min": [
+    0.847,
+    0.0,
+    0.0
+   ]
+  },
+  "furniture/lampSquareTable": {
+   "kind": "furniture",
+   "size": [
+    0.264,
+    0.264,
+    0.638
+   ],
+   "min": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "furniture/bookcaseClosed": {
+   "kind": "furniture",
+   "size": [
+    0.88,
+    0.55,
+    1.87
+   ],
+   "min": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "furniture/kitchenFridgeSmall": {
+   "kind": "furniture",
+   "size": [
+    0.946,
+    0.642,
+    1.321
+   ],
+   "min": [
+    0.0,
+    -0.022,
+    0.0
+   ]
+  },
+  "furniture/kitchenStove": {
+   "kind": "furniture",
+   "size": [
+    0.946,
+    0.99,
+    0.99
+   ],
+   "min": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "furniture/kitchenCoffeeMachine": {
+   "kind": "furniture",
+   "size": [
+    0.417,
+    0.528,
+    0.39
+   ],
+   "min": [
+    0.0,
+    0.0,
+    0.0
+   ]
+  },
+  "furniture/kitchenMicrowave": {
+   "kind": "furniture",
+   "size": [
+    0.638,
+    0.506,
+    0.396
+   ],
+   "min": [
+    0.0,
+    -0.022,
+    0.0
+   ]
   }
  }
 }

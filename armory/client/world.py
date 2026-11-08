@@ -13,7 +13,7 @@ from . import assets as A
 from . import geom as G
 from . import panels as P
 from .geom import (PLAYER_COLORS, Character, box, box_min, build_gun, bounds_center, grid_texture, hexc, mix,
-                   sphere_geom, text)
+                   set_alpha, sphere_geom, text)
 
 SEND_DT = 1 / 30
 INTERP = 0.1
@@ -324,7 +324,77 @@ class FPSView:
         self.vm_muzzle = (0, 0.3, 0)
         self.vm_flash = None
         self.vm_flash_t = 0.0
+        self.fog = fog
+        self.palettes = {}
+        self.night_on = None
+        torch = Spotlight("torch")
+        torch.setColor((1.4, 1.3, 1.1, 1))
+        torch.getLens().setFov(44)
+        torch.getLens().setNearFar(0.3, 45)
+        torch.setAttenuation((1, 0.035, 0.003))
+        self.torch = app.render.attachNewNode(torch)
+        self.objects = []
+        self.prompt_obj = None
         app.camLens.setNearFar(0.05, 450)  # a sane depth range stops distant surfaces flickering
+
+    def set_palettes(self, day, night):
+        self.palettes = {"day": day, "night": night}
+
+    def apply_palette(self, night):
+        pal = self.palettes.get("night" if night else "day")
+        self.night_on = night
+        if not pal:
+            return
+        app = self.m.app
+        app.setBackgroundColor(*hexc(pal.get("skyColor", "#a9c3d9")))
+        self.fog.setColor(*hexc(pal.get("fogColor", pal.get("skyColor", "#a9c3d9")))[:3])
+        self.fog.setExpDensity(pal.get("fogDensity", 0.01))
+        self.amb.node().setColor(hexc(pal.get("ambient", "#7a8090")))
+        c = hexc(pal.get("lightColor", "#fff2dc"))
+        self.sun.node().setColor((c[0] * (0.5 if night else 1.1), c[1] * (0.5 if night else 1.1), c[2] * (0.6 if night else 1.1), 1))
+        if night:
+            self.root.setLight(self.torch)
+        else:
+            self.root.clearLight(self.torch)
+
+    # -------------------------------------------------- interaction (objects with a "pos", described by subclasses)
+    def find_object(self):
+        cam = self.m.app.camera
+        render = self.m.app.render
+        eye = cam.getPos(render)
+        fwd = render.getRelativeVector(cam, Vec3(0, 1, 0))
+        best, best_score = None, None
+        for o in self.objects:
+            pp = Vec3(*o["pos"])
+            d = pp - eye
+            dist = d.length()
+            if dist > o.get("range", 2.8) or dist < 1e-3:
+                continue
+            cosang = d.dot(fwd) / dist
+            if cosang < (0.6 if o.get("range", 2.8) > 3 else 0.88):
+                continue
+            score = dist * (2 - cosang)
+            if best is None or score < best_score:
+                best, best_score = o, score
+        return best
+
+    def describe(self, o):
+        return None, False
+
+    def interact(self):
+        pass
+
+    def update_prompt(self):
+        m = self.m
+        self.prompt_obj = None
+        if self.controls_enabled():
+            o = self.find_object()
+            label, ok = self.describe(o) if o else (None, False)
+            if ok:
+                self.prompt_obj = o
+            m.hud.prompt.setText(label or "")
+        else:
+            m.hud.prompt.setText("")
 
     # -------------------------------------------------- state
     def teleport(self, m):
@@ -442,7 +512,8 @@ class FPSView:
     # -------------------------------------------------- frame
     def controls_enabled(self):
         m = self.m
-        return self.alive() and not m.menu_open and not m.chat_open and m.panel is None and self.m.app.mouseWatcherNode is not None
+        return (self.alive() and not m.menu_open and not m.chat_open and m.panel is None and not self.me_state.get("sl")
+                and self.m.app.mouseWatcherNode is not None)
 
     def update(self, dt):
         m = self.m
@@ -536,7 +607,12 @@ class FPSView:
                 if now - t0 > 4:
                     c.root.hide()
         m.alive_count = len(alive_ids)
+        if m.is_night != self.night_on:
+            self.apply_palette(m.is_night)
+        self.torch.setPos(app.camera.getPos(app.render))
+        self.torch.setHpr(app.camera.getHpr(app.render))
         self.update_world(dt, now)
+        self.update_prompt()
 
         cam = app.camera
         zoom = st["zoom"] if st else 1.3
@@ -570,6 +646,8 @@ class FPSView:
         t = time.monotonic() * 0.1
         self.m.app.camera.setPos(W / 2 + math.cos(t) * W * 0.6, D / 2 + math.sin(t) * D * 0.6, 22)
         self.m.app.camera.lookAt(W / 2, D / 2, 0)
+        resp = self.me_state.get("resp", 0)
+        self.m.hud.spec.setText(f"YOU'RE DOWN  -  back in your shop in {resp:.0f}s" if resp > 0 else "")
 
     def update_viewmodel(self, dt, st, moving):
         m = self.m
@@ -607,29 +685,31 @@ class FPSView:
     def update_hud(self, st, alive):
         m = self.m
         hud = m.hud
-        row = self.my_row()
-        if st and row:
-            hp = max(0, row[6])
-            mx = m.infos.get(m.me, {}).get("maxHp", 100) or 100
-            frac = hp / max(1, mx)
-            hud.hp_label.setText("HEALTH")
-            hud.hp_text.setText(str(int(hp)))
-            hud.hp_bar.set(frac, H.GOOD if frac > 0.5 else (1, 0.8, 0.3, 1) if frac > 0.25 else H.BAD)
+        me = self.me_state
+        hud.set_vitals(max(0, me.get("hp", 100)), me.get("ar", 0), me.get("hu", 100), me.get("en", 100), bool(me.get("sl")))
+        if st:
             rel = self.me_state.get("reload", 0)
             if rel > 0:
                 hud.ammo.setText("RELOAD")
                 hud.ammo.setFg(H.ACCENT)
                 hud.reload_bar.show(True)
                 hud.reload_bar.set(1 - rel / max(0.1, st["reloadTime"]))
+            elif self.me_state.get("jam"):
+                hud.ammo.setText("JAMMED")
+                hud.ammo.setFg(H.BAD)
             else:
                 ammo = self.me_state.get("ammo", 0)
                 hud.ammo.setText(str(ammo))
                 hud.ammo.setFg(H.BAD if ammo <= max(1, st["magSize"] // 5) else H.WHITE)
                 hud.reload_bar.show(False)
-            hud.ammo_sub.setText(f"{m.infos.get(m.me, {}).get('heldName', '')}  /  {st['magSize']}  {'AUTO' if st['auto'] else 'SEMI'}")
+            info = m.infos.get(m.me, {})
+            hud.ammo_sub.setText(f"{info.get('heldName', '')} ({info.get('heldCond', 1) * 100:.0f}%)  /  {st['magSize']}  {'AUTO' if st['auto'] else 'SEMI'}")
 
     def destroy(self):
         self.fx.clear()
+        self.torch.removeNode()
+        self.m.hud.prompt.setText("")
+        self.m.hud.spec.setText("")
         self.m.app.win.removeDisplayRegion(self.dr)
         self.vm_root.removeNode()
         self.root.removeNode()
@@ -673,9 +753,36 @@ class TownView(FPSView):
         self.customers = {}
         self.cust_info = {}
         self.cust_snaps = []
-        self.prompt_obj = None
-        m.hud.show_combat(False)
-        m.hud.hint.setText("WASD move  -  E interact  -  Mouse shoot (try your shop's range)  -  1-6 pick gun  -  Tab scores")
+        self.objects = world["objects"]
+        self.set_palettes({k: t[k] for k in ("skyColor", "fogColor", "ambient", "lightColor", "fogDensity") if k in t},
+                          t.get("night", {"skyColor": "#0c1120", "fogColor": "#131a29", "ambient": "#3c4560", "lightColor": "#8fa4e0", "fogDensity": 0.016}))
+        self.build_stalls(world.get("vendors", []), t)
+        m.hud.show_combat(True)
+        m.hud.hint.setText("E use  -  I inventory  -  H heal  -  G eat  -  1-6 pick gun  -  walk to a town gate to go outside")
+
+    def build_stalls(self, vendors, town):
+        tv = {v["id"]: v for v in town.get("vendors", [])}
+        for v in vendors:
+            x, y = v["pos"][0], v["pos"][1]
+            col = hexc(tv.get(v["id"], {}).get("color", "#c0392b"))
+            n = self.root.attachNewNode("stall")
+            for i in range(6):   # striped awning
+                c = col if i % 2 == 0 else hexc("#f0ece0")
+                box(n, (x - 1.75 + (i + 0.5) * 3.5 / 6, y + 1.6, 2.95), (3.5 / 6, 3.2, 0.12), c)
+            sign = text(n, v["name"].upper(), 0.42, hexc("#ffe2a0"), font=self.font)
+            sign.setPos(x, y + 0.45, 3.35)
+            sign.setH(180 + v.get("h", 180) - 180)
+            sign.setH(0 if v.get("h", 180) == 180 else 180)
+            for pr in ({"mesh": "furniture/bookcaseOpen", "x": x - 1.6, "y": y + 2.7, "h": 180},
+                       {"mesh": "furniture/cardboardBoxClosed", "x": x + 0.9, "y": y + 2.6, "h": 0},
+                       {"mesh": {"food": "furniture/kitchenStove", "clinic": "furniture/kitchenFridgeSmall"}.get(v["kind"], "furniture/bookcaseClosed"),
+                        "x": x + 0.2, "y": y + 2.75, "h": 180}):
+                place_prop(n, pr)
+            vend = make_customer(n, 3 + len(v["id"]))
+            vend.root.setPos(x, y + 1.6, 0)
+            vend.root.setH(180)
+            vend.animate(0.01, 0, armed=False)
+            self.vendors_chars = getattr(self, "vendors_chars", []) + [vend]
 
     def on_snapshot(self, msg):
         super().on_snapshot(msg)
@@ -785,28 +892,13 @@ class TownView(FPSView):
             if key not in seen:
                 self.shelf_nodes.pop(key)["np"].removeNode()
 
-    def find_object(self):
-        cam = self.m.app.camera
-        render = self.m.app.render
-        eye = cam.getPos(render)
-        fwd = render.getRelativeVector(cam, Vec3(0, 1, 0))
-        best, best_score = None, None
-        for o in self.world["objects"]:
-            p = Vec3(*o["pos"])
-            d = p - eye
-            dist = d.length()
-            if dist > 2.8 or dist < 1e-3:
-                continue
-            cosang = d.dot(fwd) / dist
-            if cosang < 0.88:
-                continue
-            score = dist * (2 - cosang)
-            if best is None or score < best_score:
-                best, best_score = o, score
-        return best
-
     def describe(self, o):
         m = self.m
+        if o["kind"] == "gate":
+            return "[E] Go outside  (zombies - PvP when 2+ players are out)", True
+        if o["kind"] == "vendor":
+            v = next((v for v in self.world["vendors"] if v["id"] == o["vendor"]), None)
+            return (f"[E] {v['name']}" if v else None), bool(v)
         mine = m.infos.get(m.me, {}).get("plot") == o["plot"]
         owner = next((i for i in m.infos.values() if i["plot"] == o["plot"]), None)
         if o["kind"] == "shelf":
@@ -821,8 +913,10 @@ class TownView(FPSView):
             return None, False
         if not mine:
             return None, False
+        if o["kind"] == "bed":
+            return ("[E] Wake up" if self.me_state.get("sl") else f"[E] Sleep  (energy {self.me_state.get('en', 100):.0f}%)"), True
         return {"workbench": "[E] Workbench - assemble guns", "terminal": "[E] Supplier terminal - buy parts",
-                "board": "[E] Upgrade board"}[o["kind"]], True
+                "board": "[E] Upgrade board", "clean": "[E] Cleaning bench"}.get(o["kind"], ""), True
 
     def interact(self):
         o = self.prompt_obj
@@ -830,6 +924,20 @@ class TownView(FPSView):
             return
         m = self.m
         mine = m.infos.get(m.me, {}).get("plot") == o["plot"]
+        if o["kind"] == "gate":
+            m.act({"a": "go_out"})
+            return
+        if o["kind"] == "vendor":
+            v = next((v for v in self.world["vendors"] if v["id"] == o["vendor"]), None)
+            if v:
+                m.open_panel(P.VendorPanel(m, v))
+            return
+        if o["kind"] == "bed" and mine:
+            m.act({"a": "wake" if self.me_state.get("sl") else "sleep"})
+            return
+        if o["kind"] == "clean" and mine:
+            m.open_panel(P.CleaningPanel(m))
+            return
         if o["kind"] == "shelf":
             if mine:
                 m.open_panel(P.ShelfPanel(m, o["slot"]))
@@ -837,7 +945,7 @@ class TownView(FPSView):
                 owner = next((i for i in m.infos.values() if i["plot"] == o["plot"]), None)
                 if owner:
                     m.open_panel(P.RivalShelfPanel(m, owner["id"], o["slot"]))
-        elif mine:
+        elif mine and o["kind"] in ("workbench", "terminal", "board"):
             m.open_panel({"workbench": P.WorkbenchPanel, "terminal": P.SupplierPanel, "board": P.UpgradePanel}[o["kind"]](m))
 
     def update_world(self, dt, now):
@@ -873,50 +981,74 @@ class TownView(FPSView):
             self.interior_np.setPos(near["center"][0], near["center"][1], 3.0)
             # move the shadow area in 6 m steps (no shimmering while walking)
             self.sun.setPos(round(self.render_pos.x / 6) * 6, round(self.render_pos.y / 6) * 6, 0)
-        self.prompt_obj = None
-        if self.controls_enabled():
-            o = self.find_object()
-            label, ok = self.describe(o) if o else (None, False)
-            if ok:
-                self.prompt_obj = o
-            m.hud.prompt.setText(label or "")
-        else:
-            m.hud.prompt.setText("")
 
     def destroy(self):
         for c in self.customers.values():
             c["char"].remove()
+        for v in getattr(self, "vendors_chars", []):
+            v.remove()
         super().destroy()
 
 
 # ====================================================================== NIGHT
-class NightView(FPSView):
+class OutsideView(FPSView):
     night = True
 
-    def __init__(self, m, msg):
-        a = msg["arena"]
+    def __init__(self, m, a):
         super().__init__(m, arena_boxes(a), a["size"], a.get("lightColor", "#9ab0ff"), a.get("ambient", "#3a4258"),
                          a.get("skyColor", "#0b0f1a"), a.get("fogColor", "#141a28"), a.get("fogDensity", 0.03),
                          a.get("groundColor", "#3a3d42"), props=a.get("props", []))
         self.static.flattenStrong()
-        self.start_at = time.monotonic() + msg.get("start_in", 0)
-        self.count_shown = None
+        self.arena = a
+        self.count_shown = 0
         self.zombies = {}
+        self.crates = {}
+        self.set_palettes(a.get("day", {}), a.get("night", {k: a[k] for k in ("skyColor", "fogColor", "ambient", "lightColor", "fogDensity") if k in a}))
+        for ex in a.get("exits", []):
+            n = self.root.attachNewNode("exit")
+            n.setPos(ex[0], ex[1], 0)
+            box(n, (0, 0, 1.4), (0.12, 0.12, 2.8), hexc("#333333"))
+            board = box(n, (0, 0, 2.6), (2.0, 0.08, 0.6), hexc("#2e7d32"))
+            board.setLightOff()
+            t = text(n, "TOWN  ->", 0.32, (1, 1, 1, 1), font=self.font)
+            t.setPos(0, -0.06, 2.5)
+            beam = box(n, (0, 0, 6), (0.25, 0.25, 12), hexc("#7CFC9A"))
+            beam.setLightOff()
+            set_alpha(beam, 0.25)
+            self.objects.append({"kind": "exit", "pos": [ex[0], ex[1], 1.2], "range": 4.0})
         self.dying = []
         self.zsnaps = []
         self.spec_idx = 0
-        torch = Spotlight("torch")
-        torch.setColor((1.4, 1.3, 1.1, 1))
-        torch.getLens().setFov(42)
-        torch.getLens().setNearFar(0.3, 40)
-        torch.setAttenuation((1, 0.04, 0.004))
-        self.torch = self.m.app.render.attachNewNode(torch)
-        self.root.setLight(self.torch)
         m.hud.show_combat(True)
-        m.hud.hint.setText("Zombies + rivals.  Kill rivals to loot 25% of their cash.  F = bayonet stab")
+        m.hud.hint.setText("Zombies roam here. PvP is on while 2+ players are outside - kills loot 25% cash.  F = bayonet")
+
+    def on_loot_gone(self, msg):
+        c = self.crates.pop(msg["id"], None)
+        if c:
+            c.removeNode()
+        self.objects = [o for o in self.objects if o.get("loot") != msg["id"]]
+
+    def describe(self, o):
+        if o["kind"] == "exit":
+            return "[E] Return to town", True
+        if o["kind"] == "loot":
+            return "[E] Search the supply crate", True
+        return None, False
+
+    def interact(self):
+        o = self.prompt_obj
+        if not o:
+            return
+        if o["kind"] == "exit":
+            self.m.act({"a": "go_town"})
+        elif o["kind"] == "loot":
+            self.m.act({"a": "loot", "id": o["loot"]})
+
+    last_loot = None
 
     def on_snapshot(self, msg):
         super().on_snapshot(msg)
+        self.last_loot = msg.get("l", [])
         self.zsnaps.append((time.monotonic(), {r[0]: r for r in msg.get("z", [])}))
         self.zsnaps = self.zsnaps[-20:]
 
@@ -961,17 +1093,21 @@ class NightView(FPSView):
     def update_world(self, dt, now):
         m = self.m
         app = m.app
-        left = self.start_at - now
-        if left > 0:
-            n = int(math.ceil(left))
-            if n != self.count_shown:
-                self.count_shown = n
-                m.hud.flash_big(str(n), f"NIGHT {m.day}  -  SURVIVE", H.WHITE, 1.0)
-                app.sounds.play("beep", 0.6)
-        elif self.count_shown and self.count_shown > 0:
-            self.count_shown = 0
-            m.hud.flash_big("SURVIVE!", "", H.BAD, 0.8)
-            app.sounds.play("go", 0.7)
+        loot = {r[0]: r for r in (self.last_loot or [])}
+        for lid in list(self.crates):
+            if lid not in loot:
+                self.on_loot_gone({"id": lid})
+        for lid, r in loot.items():
+            if lid not in self.crates:
+                n = self.root.attachNewNode("crate")
+                n.setPos(r[1], r[2], r[3])
+                if not place_prop(n, {"mesh": "props/Chest", "x": 0, "y": 0, "s": 0.9}):
+                    box(n, (0, 0, 0.4), (0.9, 0.6, 0.8), hexc("#8a6a3d"))
+                glow = box(n, (0, 0, 3), (0.12, 0.12, 6), hexc("#ffd75e"))
+                glow.setLightOff()
+                set_alpha(glow, 0.3)
+                self.crates[lid] = n
+                self.objects.append({"kind": "loot", "loot": lid, "pos": [r[1], r[2], 0.8], "range": 2.6})
         types = list(m.content.get("zombies", {}).values())
         for item in [d for d in self.dying if d[0] < now]:
             self.dying.remove(item)
@@ -994,9 +1130,6 @@ class NightView(FPSView):
             if now > zz["groan"]:
                 zz["groan"] = now + random.uniform(4, 10)
                 app.sounds.play("groan", self.dist_vol(ch.root.getPos()) * 0.6, random.uniform(0.8, 1.2))
-        cam = app.camera
-        self.torch.setPos(cam.getPos(app.render))
-        self.torch.setHpr(cam.getHpr(app.render))
 
     def spectate(self, dt, alive_ids, pos):
         m = self.m
@@ -1020,20 +1153,19 @@ class NightView(FPSView):
             cur = app.camera.getPos()
             app.camera.setPos(want if (want - cur).length() > 12 else cur + (want - cur) * min(1, dt * 8))
             app.camera.lookAt(target)
-            m.hud.spec.setText(f"SPECTATING {m.infos.get(pid, {}).get('name', '?')}   (click to switch)")
+            resp = self.me_state.get("resp", 0)
+            m.hud.spec.setText(f"YOU'RE DOWN  -  watching {m.infos.get(pid, {}).get('name', '?')}  -  back in town in {resp:.0f}s")
         else:
             super().spectate(dt, alive_ids, pos)
-            m.hud.spec.setText("")
 
     def update_hud(self, st, alive):
         super().update_hud(st, alive)
-        self.m.hud.alive.setText(f"{self.m.alive_count} ALIVE   {len(self.zombies)} ZOMBIES")
+        self.m.hud.alive.setText(f"{self.m.out_count} OUTSIDE   {len(self.zombies)} ZOMBIES")
 
     def destroy(self):
         for z in self.zombies.values():
             z["char"].remove()
         for _, ch in self.dying:
             ch.remove()
-        self.torch.removeNode()
         self.m.hud.alive.setText("")
         super().destroy()

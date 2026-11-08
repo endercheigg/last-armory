@@ -73,8 +73,18 @@ class Hud:
                                       pos=(-0.75 + i * 0.3, 0, 0.12)) for i in range(6)]
         for bg in self.hotbar_bg:
             bg.setBin("fixed", 0)
-        self.hp_label = T(self.bl, (0.07, 0.165), 0.045, MUTED, TextNode.ALeft)
-        self.hp_text = T(self.bl, (0.58, 0.165), 0.06, WHITE, TextNode.ARight)
+        self.armor_bar = Bar(self.bl, 0.07, 0.15, 0.51, 0.02, BLUE)
+        self.armor_text = T(self.bl, (0.6, 0.147), 0.032, BLUE, TextNode.ALeft)
+        self.hunger_bar = Bar(self.bl, 0.07, 0.27, 0.24, 0.016, (0.95, 0.65, 0.25, 1))
+        self.energy_bar = Bar(self.bl, 0.34, 0.27, 0.24, 0.016, (0.55, 0.8, 1.0, 1))
+        self.hunger_text = T(self.bl, (0.07, 0.295), 0.028, MUTED, TextNode.ALeft)
+        self.energy_text = T(self.bl, (0.34, 0.295), 0.028, MUTED, TextNode.ALeft)
+        self.zone = T(self.tl, (0.04, -0.13), 0.045, GOOD, TextNode.ALeft)
+        self.sleep_fade = DirectFrame(parent=self.root, frameColor=(0, 0, 0.02, 0), frameSize=(-3, 3, -1, 1))
+        self.sleep_fade.setTransparency(TransparencyAttrib.MAlpha)
+        self.sleep_text = T(self.root, (0, 0), 0.07, (0.8, 0.85, 1, 1))
+        self.hp_label = T(self.bl, (0.07, 0.205), 0.04, MUTED, TextNode.ALeft)
+        self.hp_text = T(self.bl, (0.58, 0.195), 0.06, WHITE, TextNode.ARight)
         self.hp_bar = Bar(self.bl, 0.07, 0.09, 0.51, 0.045, GOOD)
         self.ammo = T(self.br, (-0.08, 0.09), 0.1, WHITE, TextNode.ARight)
         self.ammo_sub = T(self.br, (-0.08, 0.2), 0.04, MUTED, TextNode.ARight)
@@ -139,6 +149,22 @@ class Hud:
             else:
                 t.setText("")
                 bg.hide()
+
+    def set_vitals(self, hp, armor, hunger, energy, sleeping):
+        frac = hp / 100.0
+        self.hp_label.setText("HEALTH")
+        self.hp_text.setText(str(int(hp)))
+        self.hp_bar.set(frac, GOOD if frac > 0.5 else (1, 0.8, 0.3, 1) if frac > 0.25 else BAD)
+        self.armor_bar.set(armor / 50.0)
+        self.armor_text.setText(f"{int(armor)}" if armor > 0 else "")
+        self.hunger_bar.set(hunger / 100.0, (0.95, 0.65, 0.25, 1) if hunger > 20 else BAD)
+        self.energy_bar.set(energy / 100.0, (0.55, 0.8, 1.0, 1) if energy > 25 else BAD)
+        self.hunger_text.setText("FOOD" + ("  - starving!" if hunger <= 0 else "  - hungry" if hunger < 20 else ""))
+        self.energy_text.setText("ENERGY" + ("  - exhausted!" if energy <= 0 else "  - tired" if energy < 25 else ""))
+        c = self.sleep_fade["frameColor"]
+        target = 0.82 if sleeping else 0.0
+        self.sleep_fade["frameColor"] = (0, 0, 0.02, c[3] + (target - c[3]) * 0.08)
+        self.sleep_text.setText(f"Sleeping...  energy {int(energy)}%" + chr(10) + "(press E to wake up)" if sleeping else "")
 
     def show_combat(self, on):
         for w in (self.hp_label, self.hp_text, self.ammo, self.ammo_sub):

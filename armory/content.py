@@ -1,6 +1,6 @@
 """Loads every folder in /mods (see MODDING.md).
 
-  mod.json, parts/, upgrades/, customers/, zombies/, towns/, shops/, arenas/, patches.json, server.py
+  mod.json, parts/, upgrades/, customers/, zombies/, towns/, shops/, arenas/, items/, patches.json, server.py
 """
 import importlib.util
 import json
@@ -8,7 +8,7 @@ import os
 
 from .gun import SLOT_IDS, part_price
 
-KINDS = ("parts", "upgrades", "customers", "zombies", "towns", "shops", "arenas")
+KINDS = ("parts", "upgrades", "customers", "zombies", "towns", "shops", "arenas", "items")
 
 
 def _read(path):
@@ -127,4 +127,4 @@ def load_content(mods_dir, disabled=(), load_scripts=True):
 
 
 def client_payload(c):
-    return {k: c[k] for k in ("parts", "upgrades", "customers", "zombies", "mods")}
+    return {k: c[k] for k in ("parts", "upgrades", "customers", "zombies", "items", "mods")}

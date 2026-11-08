@@ -1,0 +1,74 @@
+[
+ {
+  "id": "jerky",
+  "name": "Jerky",
+  "kind": "food",
+  "value": 20,
+  "price": 8
+ },
+ {
+  "id": "canned_food",
+  "name": "Canned Beans",
+  "kind": "food",
+  "value": 35,
+  "price": 12
+ },
+ {
+  "id": "burger",
+  "name": "Wasteland Burger",
+  "kind": "food",
+  "value": 70,
+  "energy": 5,
+  "price": 28
+ },
+ {
+  "id": "coffee",
+  "name": "Black Coffee",
+  "kind": "drink",
+  "value": 30,
+  "price": 10
+ },
+ {
+  "id": "energy_drink",
+  "name": "Energy Drink",
+  "kind": "drink",
+  "value": 55,
+  "hunger": 5,
+  "price": 22
+ },
+ {
+  "id": "bandage",
+  "name": "Bandage",
+  "kind": "heal",
+  "value": 25,
+  "price": 18
+ },
+ {
+  "id": "medkit",
+  "name": "Medkit",
+  "kind": "heal",
+  "value": 75,
+  "price": 55
+ },
+ {
+  "id": "light_shield",
+  "name": "Light Shield (25)",
+  "kind": "armor",
+  "value": 25,
+  "price": 60
+ },
+ {
+  "id": "heavy_shield",
+  "name": "Heavy Shield (50)",
+  "kind": "armor",
+  "value": 50,
+  "price": 150
+ },
+ {
+  "id": "cleaning_kit",
+  "name": "Cleaning Kit",
+  "kind": "tool",
+  "value": 1,
+  "price": 25
+ }
+]

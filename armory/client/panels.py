@@ -1,4 +1,6 @@
 """Shop UIs: supplier terminal, workbench (with live 3D preview), shelves, rival shelves, upgrade board."""
+import math
+
 from direct.gui.DirectGui import DGG, DirectButton, DirectEntry, DirectFrame
 from direct.gui.OnscreenText import OnscreenText
 from panda3d.core import Camera, NodePath, PerspectiveLens, TextNode
@@ -271,7 +273,7 @@ class WorkbenchPanel(Panel):
             x = -1.19 + (i % 3) * 0.8
             yy = -0.6 - (i // 3) * 0.12
             held = g["id"] == self.m.inv.get("held")
-            self.text(("* " if held else "") + g["name"][:16], (x, yy), 0.036, H.GOLD if held else H.WHITE)
+            self.text(("* " if held else "") + g["name"][:13] + f" {g.get('cond', 1) * 100:.0f}%", (x, yy), 0.034, H.GOLD if held else H.WHITE)
             self.button("Hold", (x + 0.5, yy + 0.012), lambda g=g: self.m.act({"a": "hold", "gid": g["id"]}), 0.13, 0.06, scale=0.034)
             if dis:
                 self.button("Scrap", (x + 0.65, yy + 0.012), lambda g=g: self.m.act({"a": "disassemble", "gid": g["id"]}), 0.14, 0.06, scale=0.034)
@@ -329,7 +331,7 @@ class ShelfPanel(Panel):
             st = compute_stats(g["parts"], self.m.parts)
             self.text(g["name"], (-0.94, 0.45), 0.06, H.GOLD)
             self.text(gun_summary(st), (-0.94, 0.37), 0.032, H.MUTED)
-            self.text(f"Parts worth ${g['value']}", (-0.94, 0.3), 0.036)
+            self.text(f"Parts worth ${g['value']}   -   {g.get('cond', 1) * 100:.0f}% clean", (-0.94, 0.3), 0.036)
             if self.price is None:
                 self.price = item["price"]
             self.price_ui(0.1)
@@ -347,7 +349,7 @@ class ShelfPanel(Panel):
         for i, g in enumerate(guns[:6]):
             y = 0.38 - i * 0.085
             on = g["id"] == self.pick
-            self.button(("> " if on else "") + f"{g['name']}   (worth ${g['value']})", (-0.35, y), lambda g=g: self.choose(g), 1.15, 0.07,
+            self.button(("> " if on else "") + f"{g['name']}   (worth ${g['value']}, {g.get('cond', 1) * 100:.0f}% clean)", (-0.35, y), lambda g=g: self.choose(g), 1.15, 0.07,
                         hot=on, scale=0.036)
         g = next(g for g in guns if g["id"] == self.pick)
         if self.price is None:
@@ -419,3 +421,236 @@ class UpgradePanel(Panel):
                             0.42, 0.09, hot=True, enabled=self.m.cash() >= cost)
             else:
                 self.text("MAX", (0.95, y - 0.03), 0.05, H.GOOD, TextNode.ACenter)
+
+
+# ---------------------------------------------------------------------------- market stalls
+class VendorPanel(Panel):
+    def __init__(self, m, vendor):
+        self.vendor = vendor
+        self.title = vendor["name"].upper()
+        super().__init__(m, 1.0, 0.72)
+
+    def build(self):
+        items = self.m.content.get("items", {})
+        mine = self.m.inv.get("items", {})
+        y = 0.45
+        for iid in self.vendor["items"]:
+            it = items.get(iid)
+            if not it:
+                continue
+            desc = {"food": f"+{it['value']} food", "drink": f"+{it['value']} energy", "heal": f"+{it['value']} health",
+                    "armor": f"{it['value']} shields (worn right away)", "tool": "cleans one gun"}.get(it["kind"], "")
+            have = f"   (you have {mine.get(iid, 0)})" if it["kind"] != "armor" else ""
+            self.text(it["name"], (-0.94, y), 0.05, H.WHITE)
+            self.text(desc + have, (-0.94, y - 0.055), 0.034, H.MUTED)
+            self.button(f"${it['price']}", (0.75, y - 0.015),
+                        lambda iid=iid: self.m.act({"a": "buy_item", "vendor": self.vendor["id"], "item": iid}),
+                        0.26, 0.08, hot=True, enabled=self.m.cash() >= it["price"])
+            y -= 0.17
+        self.text("Use items from your inventory (I), or quick-use: H heal, G eat", (0, -0.62), 0.035, H.MUTED, TextNode.ACenter)
+
+
+class InventoryPanel(Panel):
+    title = "INVENTORY"
+
+    def build(self):
+        items = self.m.content.get("items", {})
+        mine = self.m.inv.get("items", {})
+        y = 0.55
+        if not mine:
+            self.text("Nothing here. Buy food, medkits and cleaning kits at the market stalls.", (0, 0.2), 0.045, H.MUTED, TextNode.ACenter)
+        for iid, n in sorted(mine.items()):
+            it = items.get(iid)
+            if not it:
+                continue
+            self.text(f"{it['name']}  x{n}", (-1.19, y), 0.05)
+            if it["kind"] in ("food", "drink", "heal"):
+                self.button("Use", (0.95, y + 0.012), lambda iid=iid: self.m.act({"a": "use_item", "item": iid}), 0.22, 0.075, hot=True)
+            y -= 0.11
+        guns = self.m.inv.get("guns", [])
+        self.text("GUNS", (-1.19, -0.42), 0.035, H.MUTED)
+        for i, g in enumerate(guns[:6]):
+            c = g.get("cond", 1.0)
+            col = H.GOOD if c >= 0.7 else (1, 0.8, 0.3, 1) if c >= 0.4 else H.BAD
+            self.text(f"{g['name']}  -  {c * 100:.0f}% clean", (-1.19 + (i % 2) * 1.2, -0.5 - (i // 2) * 0.07), 0.04, col)
+
+
+class CleaningPanel(Panel):
+    """Scrub minigame: click the grime before it spreads. Clicking clean metal wastes the cleaning kit."""
+    title = "CLEANING BENCH"
+    refresh_on_players = False
+    AREA = (-0.15, 1.2, -0.45, 0.55)   # aspect2d rect of the preview / scrub area
+
+    def __init__(self, m):
+        self.gid = None
+        self.active = False
+        self.left = 0
+        self.cond = 0.0
+        self.spots = []
+        self.spot_btns = []
+        self.t = 0.0
+        self.scene = NodePath("cleanprev")
+        from . import geom as G
+        from .world import make_lights
+        G.shader_auto(self.scene)
+        make_lights(self.scene, "#fff2e0", "#7a8090", shadows=False)
+        self.holder = self.scene.attachNewNode("holder")
+        self.gun = None
+        # render the gun into a texture shown inside the panel, so the grime spots can sit on top of it
+        x0, x1, y0, y1 = self.AREA
+        self.buf = m.app.win.makeTextureBuffer("cleanbuf", 768, int(768 * (y1 - y0) / (x1 - x0)))
+        self.buf.setClearColor((0.12, 0.11, 0.1, 1))
+        self.buf.setSort(-10)
+        lens = PerspectiveLens()
+        lens.setFov(30, 30 * (y1 - y0) / (x1 - x0))
+        self.cam = m.app.makeCamera(self.buf, lens=lens)
+        self.cam.reparentTo(self.scene)
+        self.cam.setPos(0, -4.2, 0)
+        self.cam.lookAt(0, 0, 0)
+        self.lens = lens
+        super().__init__(m)
+        self.image = DirectFrame(parent=self.root, frameColor=(1, 1, 1, 1), frameSize=(x0, x1, y0, y1),
+                                 image=self.buf.getTexture(), image_scale=((x1 - x0) / 2, 1, (y1 - y0) / 2),
+                                 image_pos=((x0 + x1) / 2, 0, (y0 + y1) / 2))
+
+    def build(self):
+        guns = self.m.inv.get("guns", [])
+        kits = self.m.inv.get("items", {}).get("cleaning_kit", 0)
+        self.text(f"Cleaning kits: {kits}", (-1.19, 0.6), 0.045, H.GOLD if kits else H.BAD)
+        self.text("Dirty guns jam, shoot wider and sell for less.", (-1.19, 0.53), 0.033, H.MUTED)
+        self.text("Customers won't touch anything under 30%.", (-1.19, 0.48), 0.033, H.MUTED)
+        y = 0.36
+        for g in guns[:7]:
+            c = g.get("cond", 1.0)
+            on = g["id"] == self.gid
+            self.button(f"{g['name'][:14]}  {c * 100:.0f}%", (-0.75, y), lambda g=g: self.pick(g), 0.8, 0.075, hot=on, scale=0.036)
+            y -= 0.1
+        if not self.active:
+            g = next((g for g in guns if g["id"] == self.gid), None)
+            self.button("Start cleaning (uses 1 kit)", (-0.75, -0.5), self.start, 0.8, 0.09, hot=True,
+                        enabled=bool(g and kits and g.get("cond", 1) < 0.999))
+            self.text("Click the grime as fast as you can.\nSpots you leave alone spread.\nClicking clean metal wastes the kit.",
+                      (0.52, -0.6), 0.034, H.MUTED, TextNode.ACenter)
+        else:
+            self.text(f"Scrubs left: {self.left}", (0.1, -0.55), 0.05, H.WHITE)
+            self.text(f"Condition: {self.cond * 100:.0f}%", (0.75, -0.55), 0.05, H.GOOD if self.cond >= 0.7 else H.WHITE)
+            self.button("Stop", (1.05, -0.68), self.stop, 0.2, 0.07)
+
+    def pick(self, g):
+        if not self.active:
+            self.gid = g["id"]
+            self.cond = g.get("cond", 1.0)
+            self.show_gun(g)
+            self.refresh()
+
+    def show_gun(self, g):
+        if self.gun:
+            self.gun.removeNode()
+        gun, _ = build_gun(self.holder, g["parts"], self.m.parts)
+        c, size = bounds_center(gun)
+        gun.setPos(-c[0], -c[1], -c[2])
+        self.holder.setScale(1.6 / size)
+        self.gun = gun
+
+    def start(self):
+        if self.gid:
+            self.m.act({"a": "clean_start", "gid": self.gid})
+
+    def stop(self):
+        self.m.act({"a": "clean_stop"})
+        self.end()
+
+    def end(self):
+        self.active = False
+        for b in self.spot_btns:
+            b.destroy()
+        self.spot_btns = []
+        self.spots = []
+        self.refresh()
+
+    def on_server(self, msg):
+        self.gid = msg["gid"]
+        self.cond = msg["cond"]
+        was = self.active
+        self.left = msg["left"]
+        self.active = msg["left"] > 0 and msg["cond"] < 0.999
+        if self.active and not was:
+            self.catcher()
+            for _ in range(4):
+                self.spawn_spot()
+            self.app.sounds.play("craft", 0.5)
+        if was and not self.active:
+            self.app.sounds.play("gate_good", 0.7)
+            self.end()
+            return
+        self.refresh()
+
+    def refresh(self):
+        super().refresh()
+        for b in self.spot_btns:      # keep the scrub spots above the rebuilt panel widgets
+            b.reparentTo(self.root)
+
+    def catcher(self):
+        x0, x1, y0, y1 = self.AREA
+        b = DirectButton(parent=self.root, frameColor=(0, 0, 0, 0.01), frameSize=(x0, x1, y0, y1), relief=DGG.FLAT,
+                         command=self.miss, pressEffect=0)
+        self.spot_btns.append(b)
+
+    def spawn_spot(self):
+        import random
+        x0, x1, y0, y1 = self.AREA
+        sx, sy = random.uniform(x0 + 0.15, x1 - 0.15), random.uniform(y0 + 0.2, y1 - 0.15)
+        spot = {"x": sx, "y": sy, "hp": random.randint(1, 2), "age": 0.0}
+        btn = DirectButton(parent=self.root, pos=(sx, 0, sy), relief=DGG.FLAT, pressEffect=0,
+                           frameColor=(0.24, 0.17, 0.08, 0.92), frameSize=(-0.05, 0.05, -0.05, 0.05),
+                           command=lambda: self.scrub(spot))
+        spot["btn"] = btn
+        self.spots.append(spot)
+        self.spot_btns.append(btn)
+        self.size_spot(spot)
+
+    def size_spot(self, spot):
+        s = 0.035 + 0.018 * spot["hp"]
+        spot["btn"]["frameSize"] = (-s, s, -s, s)
+
+    def scrub(self, spot):
+        if not self.active or spot not in self.spots:
+            return
+        self.m.act({"a": "scrub"})
+        self.app.sounds.play("tick", 0.6)
+        spot["hp"] -= 1
+        if spot["hp"] <= 0:
+            self.spots.remove(spot)
+            spot["btn"].destroy()
+            self.spot_btns.remove(spot["btn"])
+            self.spawn_spot()
+        else:
+            self.size_spot(spot)
+
+    def miss(self):
+        if self.active:
+            self.m.act({"a": "miss"})
+            self.app.sounds.play("gate_bad", 0.4)
+
+    def update(self, dt):
+        import random
+        self.t += dt
+        if self.gun:
+            self.holder.setH(90 + math.sin(self.t * 0.6) * 10)
+        if self.active:
+            for spot in list(self.spots):
+                spot["age"] += dt
+                if spot["age"] > 2.2:          # grime spreads if you're slow
+                    spot["age"] = 0.0
+                    if spot["hp"] < 4:
+                        spot["hp"] += 1
+                        self.size_spot(spot)
+                    elif len(self.spots) < 9 and random.random() < 0.6:
+                        self.spawn_spot()
+
+    def destroy(self):
+        if self.active:
+            self.m.act({"a": "clean_stop"})
+        self.app.graphicsEngine.removeWindow(self.buf)
+        self.scene.removeNode()
+        super().destroy()

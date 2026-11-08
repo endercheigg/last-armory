@@ -168,7 +168,8 @@ KEEP = ["bookcaseOpen", "bookcaseOpenLow", "bookcaseClosedWide", "kitchenBar", "
         "plantSmall1", "plantSmall2", "plantSmall3", "lampSquareFloor", "lampRoundFloor", "lampSquareCeiling", "lampWall",
         "rugRectangle", "rugRound", "rugDoormat", "tableCross", "table", "desk", "chairDesk", "stoolBar", "cardboardBoxOpen",
         "cardboardBoxClosed", "trashcan", "radio", "speaker", "coatRackStanding", "sideTable", "books", "laptop",
-        "computerScreen", "televisionVintage", "benchCushion", "ceilingFan"]
+        "computerScreen", "televisionVintage", "benchCushion", "ceilingFan", "bedSingle", "lampSquareTable",
+        "bookcaseClosed", "kitchenFridgeSmall", "kitchenStove", "kitchenCoffeeMachine", "kitchenMicrowave"]
 for name in KEEP:
     np = load(find(rf"kenney\**\{name}.glb"))
     holder = NodePath("f")

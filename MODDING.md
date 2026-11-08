@@ -11,7 +11,8 @@ mods/my_mod/
   zombies/*.json    zombie types
   towns/*.json      town layouts (plots for shops)
   shops/*.json      the shop interior template
-  arenas/*.json     night arenas
+  arenas/*.json     the wasteland outside town
+  items/*.json      food, medicine, shields, tools sold at market stalls
   patches.json      tweak anything existing
   server.py         gameplay scripting (server only)
 ```
@@ -108,3 +109,16 @@ Put models in `mods/<your_mod>/models/` as `.bam`, `.gltf`/`.glb` or `.obj`, and
 - **Boxes:** add `"mesh"` to show a model stretched to fill the box (e.g. containers), or `"invisible": true` to keep only the collision.
 
 If a player is missing a model that a server references, the game draws the box version instead, so nothing breaks.
+
+## Items and market stalls
+```json
+{ "id": "burger", "name": "Wasteland Burger", "kind": "food", "value": 70, "energy": 5, "price": 28 }
+```
+Kinds: `food` (+hunger), `drink` (+energy), `heal` (+health), `armor` (shields, worn on purchase, max 50), `tool` (`cleaning_kit` cleans one gun).
+Stalls are listed in the town JSON: `"vendors": [{"id", "name", "kind", "x", "y", "h", "color", "items": [ids]}]`.
+
+## The wasteland (`arenas/*.json`)
+Besides `boxes`/`props`/`spawns`/`zspawns`: `entry` (where players arrive), `exits` (walk here and press E to go back to town), `loot` (supply crate spots), plus `day` and `night` colour sets. Choose which arena is outside with `"outside"` in `server_config.json`.
+
+## Damage
+Guns use Valorant-style numbers: `damage` is body damage, `headshot` is the head multiplier, and legs take 85%. Players have 100 HP plus up to 50 shields, which absorb damage first. More hooks: `on_zone(api, player, zone)` and `api.give_item(player, id)`.

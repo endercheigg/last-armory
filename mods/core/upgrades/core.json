@@ -91,25 +91,25 @@
  },
  {
   "id": "armor",
-  "name": "Night Armor",
-  "description": "More health for the night raid.",
+  "name": "Armor Locker",
+  "description": "Free shields every morning (25 / 35 / 50).",
   "levels": [
    {
     "cost": 200,
     "effects": {
-     "maxHp": 25
+     "armorMorning": 25
     }
    },
    {
     "cost": 450,
     "effects": {
-     "maxHp": 35
+     "armorMorning": 35
     }
    },
    {
     "cost": 900,
     "effects": {
-     "maxHp": 50
+     "armorMorning": 50
     }
    }
   ]

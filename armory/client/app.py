@@ -288,7 +288,7 @@ def run(root, extra_prc=""):
 
             def go(fn):
                 return lambda: (save_name(), fn())
-            self.button(fr, "Quick Play  (host + bots)", (0.12, 0.14), go(self.quick_play), primary=True, width=0.8)
+            self.button(fr, "Play  (host your own town)", (0.12, 0.14), go(self.quick_play), primary=True, width=0.8)
             self.button(fr, "Join Server", (0.12, 0.02), go(self.join_menu), width=0.8)
             self.button(fr, "Host Server", (0.12, -0.1), go(self.host_menu), width=0.8)
             self.button(fr, "Settings", (0.12, -0.22), go(self.settings_menu), width=0.8)
@@ -341,9 +341,8 @@ def run(root, extra_prc=""):
             nm = self.entry(fr, s["host_name"] or f"{s['name']}'s server", (0.13, 0, 0.38), 16)
             self.label(fr, "Port", (0.13, 0.28), 0.038, H.MUTED)
             port = self.entry(fr, str(s["host_port"]), (0.13, 0, 0.2), 5)
-            st = {"min": s["host_min"], "first": s["host_first"], "bots": s["host_bots"]}
-            self.stepper(fr, "Fill with bots to", 0.06, lambda: st["min"], lambda v: st.__setitem__("min", v), 1, 8)
-            self.stepper(fr, "Days per match", -0.06, lambda: st["first"], lambda v: st.__setitem__("first", v), 1, 15)
+            st = {"min": s["host_min"], "first": s["host_first"], "bots": False}
+            self.stepper(fr, "Days per match", 0.0, lambda: st["first"], lambda v: st.__setitem__("first", v), 1, 15)
 
             def start():
                 try:
@@ -409,10 +408,8 @@ def run(root, extra_prc=""):
                 cmd = [sys.executable, "--server"]  # the game binary doubles as a server
             else:
                 cmd = [sys.executable, os.path.join(root, "LastArmory.py"), "--server"]
-            cmd += ["--port", str(port), "--min-players", str(min_players), "--days", str(days), "--name", name or "Last Armory",
+            cmd += ["--port", str(port), "--days", str(days), "--name", name or "Last Armory",
                     "--config", os.path.join(self.data_dir, "hosted_config.json")]
-            if not bots:
-                cmd.append("--no-bots")
             log = open(os.path.join(self.data_dir, "hosted_server.log"), "w", encoding="utf-8")
             flags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
             self.server_proc = subprocess.Popen(cmd, cwd=root, stdout=log, stderr=subprocess.STDOUT,

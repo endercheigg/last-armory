@@ -1,34 +1,45 @@
 # LAST ARMORY
 
-**Build guns. Sell guns. Survive the night.**
+**Build guns. Sell guns. Survive outside.**
 
-A first-person, multiplayer gunsmith game set in a zombie-apocalypse outpost.
+A first-person, multiplayer gunsmith game set in a zombie-apocalypse outpost. There are no bots: just you, your friends, the townspeople and the dead.
 
-### Day: run your gun shop
+### Your gun shop (the town is a safe zone)
 - Every player owns a shop on the same town square.
-- **Supplier terminal:** buy parts from today's stock. Rarity runs Common → Uncommon → Rare → Epic → Legendary, and better stock shows up as the days go on.
-- **Workbench:** assemble a gun from a receiver, barrel and magazine, plus an optional stock, grip, scope, muzzle and bayonet. There are no compatibility rules, so any part fits any gun, and the gun builds up in 3D as you go.
-- **Shelves:** put guns on display at your own price. Townspeople walk in with a budget and a wish ("wants LONG RANGE", "wants A BAYONET"...). They buy if the gun suits them and the price is fair, and pay a premium when it matches what they want.
-- **Upgrade board:** buy display racks, cozy decor, a shop sign, a pro workbench (scrap guns back into parts, supplier discount) and night armor.
-- **Shooting range:** test your guns on the targets at the back of your shop.
-- **Rivals:** walk into another player's shop and **buy their guns off the shelf**.
+- **Supplier terminal:** buy parts, Common to Legendary. **The stock changes every time you walk to the middle of town and come back.**
+- **Workbench:** assemble a gun from a receiver, barrel and magazine, plus an optional stock, grip, scope, muzzle and bayonet. There are no compatibility rules, so any part fits any gun.
+- **Cleaning bench:** fresh guns come out grimy, and firing dirties them further. Dirty guns jam, shoot wider and sell for less, and customers refuse anything under 30%. Cleaning is a scrub minigame that uses a cleaning kit: click the grime before it spreads, and missed clicks waste the kit.
+- **Shelves:** price your guns yourself. Townspeople have real money now:
+  - They buy something **80% of the time**.
+  - When a gun matches what they want ("wants LONG RANGE"), they **always** buy it, even above their stated budget.
+- **Bed:** your energy drains through the day. Tired means slower movement and shaky aim, so **sleep** in your shop's bed.
+- **Upgrade board:** display racks, decor, sign, pro workbench, and an armor locker (free shields every morning).
+- **Rivals:** walk into another player's shop and buy their guns off the shelf.
 
-### Night: PvP raid
-Everyone grabs the gun they're holding and heads into the wasteland.
-- Zombies attack in waves, and killing them pays cash.
-- Rival gunsmiths are fair game: a kill **loots 25% of their cash**.
-- The last one standing earns a **$250 bounty**.
+### The market (town square)
+- **Ma's Diner:** food (a hunger meter drains, and starving hurts) and coffee/energy drinks.
+- **Field Clinic:** bandages and medkits.
+- **Ironside Supply:** light (25) and heavy (50) shields, and cleaning kits.
 
-After the final day (5 by default), **the richest gunsmith wins.**
+### Outside (zombies + PvP)
+Walk to a town gate to go out into the wasteland.
+- Zombies roam there all the time, with more and tougher ones at night. Kills pay cash.
+- Supply crates hold parts, cash and items.
+- **PvP is only on while 2 or more players are outside.** A kill loots 25% of the victim's cash.
+- Damage works like Valorant: you have 100 HP plus shields, and shields soak damage first. Rifles do 40 to the body and 160 to the head (a one-tap even through heavy shields); the revolver, marksman and railgun one-shot heads too, while pistols and SMGs need more hits. Legs take 85%.
+
+A day lasts 6 minutes plus a 3-minute night, and there are no customers at night. After the last day (5 by default), **the richest gunsmith wins.**
 
 ## Controls
 | | |
 |---|---|
 | WASD / Space | move / jump |
 | Mouse | look, left click shoot, right click aim |
-| E | use (workbench, supplier, shelves, upgrade board, rival shelves) |
+| E | use (workbench, supplier, cleaning bench, bed, shelves, stalls, gates, crates) |
+| I | inventory |
+| H / G | quick-use: heal / eat |
 | F (or middle mouse) | bayonet stab |
-| R | reload |
+| R | reload (also clears a jam) |
 | 1-6 | switch which gun you hold |
 | Tab | cash leaderboard |
 | Enter / T | chat |
@@ -37,7 +48,7 @@ After the final day (5 by default), **the richest gunsmith wins.**
 
 ## Install and play
 ### Windows
-Unzip `LastArmory-Windows.zip` and run **LastArmory.exe**. Click **Quick Play** to get a game with bots.
+Unzip `LastArmory-Windows.zip` and run **LastArmory.exe**. Click **Play** to host your own town; friends join with your address.
 
 ### macOS
 See **[mac/README-mac.md](mac/README-mac.md)**. The short version: double-click **Play.command**, which installs Panda3D the first time and starts the game. You can also build a real **LastArmory.app** with `mac/build_mac_app.sh`.
@@ -62,16 +73,17 @@ python3 LastArmory.py
 | port | 27030 | |
 | maxPlayers | 8 | one shop per player (8 plots in the default town) |
 | password | "" | |
-| minPlayers / bots / botSkill | 4 / true / 0.5 | bots run shops too |
+| pvpMinPlayers | 2 | players outside needed for PvP |
 | days | 5 | |
-| daySeconds / nightSeconds | 180 / 100 | |
+| dayMinutes / nightMinutes | 6 / 3 | |
+| outside | "" | wasteland arena id |
 | startCash | 400 | |
 | town, arenas | | pick by id (empty = default / all) |
 | disabledMods | [] | |
 
-Flags: `--port --name --min-players --no-bots --days --day-seconds --config`
+Flags: `--port --name --days --day-minutes --night-minutes --config`
 
-Server console: `help, say, list, kick, skip, givecash <name> <n>, days <n>, minplayers <n>, bots on|off, reload, quit`
+Server console: `help, say, list, kick, givecash <name> <n>, days <n>, skipday, reload, quit`
 
 ## Modding
 Everything is JSON in `mods/`: gun parts (real gun models or box models), upgrades, customer types, zombie types, the town, the shop layout and night arenas. Gameplay scripting is Python. Players install nothing, because the server sends its content when they join. See **[MODDING.md](MODDING.md)** and `mods/example_mod`.

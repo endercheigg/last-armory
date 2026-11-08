@@ -81,7 +81,9 @@ def build_town(content, town_id=None, shop_id=None):
             x, y = to_world(p, sh[0], sh[1])
             p["shelves"].append([x, y, sh[2] if len(sh) > 2 else 1.2, (sh[3] if len(sh) > 3 else 0) + p["rot"]])
             objects.append({"kind": "shelf", "plot": i, "slot": j, "pos": [x, y, sh[2] if len(sh) > 2 else 1.2]})
-        for kind in ("workbench", "terminal", "board"):
+        for kind in ("workbench", "terminal", "board", "bed", "clean"):
+            if kind not in shop:
+                continue
             q = point(p, shop[kind], 1.0)
             p[kind] = q
             objects.append({"kind": kind, "plot": i, "pos": q})
@@ -95,7 +97,14 @@ def build_town(content, town_id=None, shop_id=None):
         p["sign_text"] = point(p, shop.get("signText", [sw / 2, -0.4, 3.6]), 3.6)
         p["sign_rot"] = p["rot"]
         plots.append(p)
+    vendors = []
+    for v in town.get("vendors", []):
+        vendors.append({"id": v["id"], "name": v.get("name", v["id"]), "kind": v.get("kind", "general"),
+                        "items": v.get("items", []), "pos": [v["x"], v["y"], 1.0], "h": v.get("h", 0)})
+        objects.append({"kind": "vendor", "vendor": v["id"], "plot": -1, "pos": [v["x"], v["y"], 1.0]})
+    for g in town.get("gates", []):
+        objects.append({"kind": "gate", "plot": -1, "pos": [g[0], g[1], 1.0], "range": 4.0})
     boxes += prop_boxes(props)
     return {"town": town, "shop": shop, "size": town["size"], "boxes": boxes, "plots": plots, "props": props,
             "targets": targets, "objects": objects, "gates": town.get("gates", [[2, town["size"][1] / 2]]),
-            "plaza": town.get("plaza", [town["size"][0] / 2, town["size"][1] / 2])}
+            "plaza": town.get("plaza", [town["size"][0] / 2, town["size"][1] / 2]), "vendors": vendors}
