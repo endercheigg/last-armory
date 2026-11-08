@@ -1,5 +1,5 @@
 {
- "source": "Quaternius Zombie Apocalypse Kit + Ultimate Gun Pack, Kenney Furniture Kit (all CC0)",
+ "source": "Quaternius Zombie Apocalypse Kit + Ultimate Gun Pack, Kenney Furniture Kit (all CC0) + Quaternius Universal Base Characters / Animation Library 1+2 (CC0) + Quaternius Universal Base Characters / Animation Library 1+2 (CC0)",
  "models": {
   "chars/lis": {
    "kind": "character",
@@ -2538,6 +2538,93 @@
     0.0,
     -0.022,
     0.0
+   ]
+  },
+  "humans/male": {
+   "kind": "human",
+   "facing": 180,
+   "height": 1.82
+  },
+  "humans/female": {
+   "kind": "human",
+   "facing": 180,
+   "height": 1.775
+  },
+  "humans/anims": {
+   "kind": "anims",
+   "names": [
+    "Consume",
+    "Crouch_Idle_Loop",
+    "Death01",
+    "Hit_Chest",
+    "Hit_Head",
+    "Idle_FoldArms_Loop",
+    "Idle_Loop",
+    "Idle_No_Loop",
+    "Idle_Talking_Loop",
+    "Interact",
+    "Jog_Fwd_Loop",
+    "Jump_Loop",
+    "LayToIdle",
+    "Pistol_Aim_Neutral",
+    "Pistol_Idle_Loop",
+    "Pistol_Reload",
+    "Pistol_Shoot",
+    "Punch_Jab",
+    "Sitting_Idle_Loop",
+    "Sprint_Loop",
+    "Walk_Carry_Loop",
+    "Walk_Loop",
+    "Yes",
+    "Zombie_Idle_Loop",
+    "Zombie_Scratch",
+    "Zombie_Walk_Fwd_Loop"
+   ]
+  },
+  "humans/hair_eyebrows_female": {
+   "kind": "hair"
+  },
+  "humans/hair_eyebrows_regular": {
+   "kind": "hair"
+  },
+  "humans/hair_hair_beard": {
+   "kind": "hair"
+  },
+  "humans/hair_hair_buns": {
+   "kind": "hair"
+  },
+  "humans/hair_hair_buzzed": {
+   "kind": "hair"
+  },
+  "humans/hair_hair_buzzedfemale": {
+   "kind": "hair"
+  },
+  "humans/hair_hair_long": {
+   "kind": "hair"
+  },
+  "humans/hair_hair_simpleparted": {
+   "kind": "hair"
+  },
+  "humans/outfits": {
+   "kind": "outfits",
+   "ids": [
+    "p0",
+    "p1",
+    "p2",
+    "p3",
+    "p4",
+    "p5",
+    "p6",
+    "p7",
+    "c0",
+    "c1",
+    "c2",
+    "c3",
+    "c4",
+    "c5",
+    "z0",
+    "z1",
+    "z2"
    ]
   }
  }

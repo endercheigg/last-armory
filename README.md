@@ -91,4 +91,4 @@ Everything is JSON in `mods/`: gun parts (real gun models or box models), upgrad
 Built with Python and [Panda3D](https://www.panda3d.org), using free CC0 3D models (see Credits) and synthesized sounds. An original game inspired by the gun-shop simulator genre.
 
 ## Credits
-3D models: Quaternius (Zombie Apocalypse Kit, Ultimate Gun Pack) and Kenney (Furniture Kit), all CC0 / public domain. Licence files are in `mods/core/models/`. To rebuild the models from the original packs, put the zips in `assets_src/` and run `python tools/convert_assets.py` (needs `pip install panda3d-gltf`).
+3D models: Quaternius (Zombie Apocalypse Kit, Ultimate Gun Pack, Universal Base Characters, Universal Animation Library 1 & 2) and Kenney (Furniture Kit), all CC0 / public domain. Licence files are in `mods/core/models/`. To rebuild the models from the original packs, put the zips in `assets_src/` and run `python tools/convert_assets.py`, `python tools/convert_characters.py` and `python tools/make_outfits.py` (needs `pip install panda3d-gltf pillow`; the game itself needs neither).

@@ -14,8 +14,8 @@ BASE_SPEED = 6.5
 STEP_H = 0.55
 BODY_R = 0.34
 BODY_H = 1.56
-HEAD_Z = 1.74
-HEAD_R = 0.15        # small, Valorant-like head hitbox
+HEAD_Z = 1.68
+HEAD_R = 0.135       # small, Valorant-like head hitbox
 LEG_Z = 0.9          # hits below this height count as legs (x0.85)
 
 

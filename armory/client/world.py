@@ -175,12 +175,17 @@ def place_box(parent, b, cube_parent=None):
 
 # ====================================================================== CHARACTER FACTORIES
 def make_player(parent, info, gun_scale=1.15):
+    if A.has_humans():
+        c = info["color"] % 8
+        return A.HumanChar(parent, look=info["id"] * 5 + c, outfit=f"p{c}", gender="female" if info["id"] % 3 == 2 else "male")
     if A.has(A.PLAYER_MODELS[0]):
         return A.AnimChar(parent, A.PLAYER_MODELS[info["color"] % len(A.PLAYER_MODELS)])
     return Character(parent, PLAYER_COLORS[info["color"] % 8], gun_scale=gun_scale)
 
 
 def make_customer(parent, look):
+    if A.has_humans():
+        return A.HumanChar(parent, look=look)
     if A.has(A.PLAYER_MODELS[0]):
         f = 0.8 + (look * 37 % 40) / 100.0
         return A.AnimChar(parent, A.PLAYER_MODELS[look % len(A.PLAYER_MODELS)], tint=(f, f * 0.97, f * 0.94, 1))
@@ -188,7 +193,9 @@ def make_customer(parent, look):
                      hat=look % 3 == 0)
 
 
-def make_zombie(parent, zt):
+def make_zombie(parent, zt, look=0):
+    if A.has_humans():
+        return A.HumanChar(parent, look=look, zombie=True, scale=zt.get("scale", 1.0))
     mesh = zt.get("mesh", "zombies/basic")
     if A.has(mesh):
         return A.AnimChar(parent, mesh, zombie=True, scale=zt.get("scale", 1.0))
@@ -782,6 +789,9 @@ class TownView(FPSView):
             vend.root.setPos(x, y + 1.6, 0)
             vend.root.setH(180)
             vend.animate(0.01, 0, armed=False)
+            if isinstance(vend, A.HumanChar):
+                vend._play("legs", "Idle_FoldArms_Loop")
+                vend._play("upper", "Idle_FoldArms_Loop")
             self.vendors_chars = getattr(self, "vendors_chars", []) + [vend]
 
     def on_snapshot(self, msg):
@@ -798,7 +808,7 @@ class TownView(FPSView):
             c["bubble"].node().setText(msg["text"])
             c["bubble"].node().setTextColor(*(H.GOOD if msg.get("happy") else H.BAD))
             if hasattr(c["char"], "gesture"):
-                c["char"].gesture("Yes" if msg.get("happy") else "No")
+                c["char"].gesture("Yes" if msg.get("happy") else ("Idle_No_Loop" if isinstance(c["char"], A.HumanChar) else "No"))
 
     def on_target_hit(self, msg):
         for t in self.targets:
@@ -1120,7 +1130,7 @@ class OutsideView(FPSView):
             zz = self.zombies.get(zid)
             if not zz:
                 zt = types[ti] if ti < len(types) else {}
-                ch = make_zombie(self.root, zt)
+                ch = make_zombie(self.root, zt, look=zid if isinstance(zid, int) else sum(map(ord, str(zid))))
                 zz = {"char": ch, "groan": now + random.uniform(1, 6)}
                 self.zombies[zid] = zz
             ch = zz["char"]
