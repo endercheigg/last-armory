@@ -174,9 +174,177 @@ def gun_layout(loadout, parts):
     return out, pos["muzzle"]
 
 
+def _vdata(name):
+    fmt = GeomVertexFormat.getV3n3()
+    vd = GeomVertexData(name, fmt, Geom.UHStatic)
+    return vd, GeomVertexWriter(vd, "vertex"), GeomVertexWriter(vd, "normal")
+
+
+def _node(parent, name, vd, tris):
+    g = Geom(vd)
+    g.addPrimitive(tris)
+    gn = GeomNode(name)
+    gn.addGeom(g)
+    return parent.attachNewNode(gn)
+
+
+def cylinder(parent, center, r, length, color, r2=None, seg=20, axis="y"):
+    """Tube/cone along an axis (default +Y), centred at `center`, with end caps. r2 = radius at the +end (taper)."""
+    r2 = r if r2 is None else r2
+    vd, vw, nw = _vdata("cyl")
+    tris = GeomTriangles(Geom.UHStatic)
+    h = length / 2
+    slope = (r - r2) / max(1e-6, length)
+    idx = 0
+    for i in range(seg):
+        a0, a1 = 2 * math.pi * i / seg, 2 * math.pi * (i + 1) / seg
+        for a in (a0, a1):
+            pass
+        quad = []
+        for a, y, rr in ((a0, -h, r), (a1, -h, r), (a1, h, r2), (a0, h, r2)):
+            ca, sa = math.cos(a), math.sin(a)
+            vw.addData3(ca * rr, y, sa * rr)
+            n = (ca, slope, sa)
+            l = math.sqrt(n[0] ** 2 + n[1] ** 2 + n[2] ** 2)
+            nw.addData3(n[0] / l, n[1] / l, n[2] / l)
+        tris.addVertices(idx, idx + 2, idx + 1)
+        tris.addVertices(idx, idx + 3, idx + 2)
+        idx += 4
+    for y, rr, ny in ((-h, r, -1), (h, r2, 1)):
+        c = idx
+        vw.addData3(0, y, 0)
+        nw.addData3(0, ny, 0)
+        idx += 1
+        for i in range(seg + 1):
+            a = 2 * math.pi * i / seg
+            vw.addData3(math.cos(a) * rr, y, math.sin(a) * rr)
+            nw.addData3(0, ny, 0)
+            idx += 1
+        for i in range(seg):
+            if ny < 0:
+                tris.addVertices(c, c + 1 + i, c + 2 + i)
+            else:
+                tris.addVertices(c, c + 2 + i, c + 1 + i)
+    np = _node(parent, "cyl", vd, tris)
+    np.setPos(*center)
+    if axis == "x":
+        np.setH(-90)
+    elif axis == "z":
+        np.setP(90)
+    np.setColor(*(color if isinstance(color, tuple) else hexc(color)))
+    return np
+
+
+def _triangulate(pts):
+    """Ear clipping for a simple polygon [(y, z), ...]. Returns index triples, counter-clockwise."""
+    n = len(pts)
+    if n < 3:
+        return []
+    area = sum(pts[i][0] * pts[(i + 1) % n][1] - pts[(i + 1) % n][0] * pts[i][1] for i in range(n))
+    order = list(range(n)) if area > 0 else list(range(n))[::-1]
+    out = []
+    guard = 0
+    while len(order) > 3 and guard < 10000:
+        guard += 1
+        for k in range(len(order)):
+            i0, i1, i2 = order[k - 1], order[k], order[(k + 1) % len(order)]
+            a, b, c = pts[i0], pts[i1], pts[i2]
+            cross = (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0])
+            if cross <= 1e-12:
+                continue
+            inside = False
+            for j in order:
+                if j in (i0, i1, i2):
+                    continue
+                p = pts[j]
+                d1 = (b[0] - a[0]) * (p[1] - a[1]) - (b[1] - a[1]) * (p[0] - a[0])
+                d2 = (c[0] - b[0]) * (p[1] - b[1]) - (c[1] - b[1]) * (p[0] - b[0])
+                d3 = (a[0] - c[0]) * (p[1] - c[1]) - (a[1] - c[1]) * (p[0] - c[0])
+                if d1 >= 0 and d2 >= 0 and d3 >= 0:
+                    inside = True
+                    break
+            if not inside:
+                out.append((i0, i1, i2))
+                order.pop(k)
+                break
+        else:
+            break
+    if len(order) == 3:
+        out.append(tuple(order))
+    return out
+
+
+def prism(parent, x, width, pts, color):
+    """Side-view outline pts [(y, z), ...] extruded across X (thickness `width`, centred at x)."""
+    vd, vw, nw = _vdata("prism")
+    tris = GeomTriangles(Geom.UHStatic)
+    hw = width / 2
+    idx = 0
+    tri = _triangulate(pts)
+    for side in (-1, 1):
+        base = idx
+        for (y, z) in pts:
+            vw.addData3(x + side * hw, y, z)
+            nw.addData3(side, 0, 0)
+            idx += 1
+        for a, b, c in tri:
+            if side > 0:   # seen from +X, Y runs right and Z up, so the outline's CCW order faces outward
+                tris.addVertices(base + a, base + b, base + c)
+            else:
+                tris.addVertices(base + a, base + c, base + b)
+    n = len(pts)
+    ccw = sum(pts[i][0] * pts[(i + 1) % n][1] - pts[(i + 1) % n][0] * pts[i][1] for i in range(n)) > 0
+    for i in range(n):
+        (y0, z0), (y1, z1) = pts[i], pts[(i + 1) % n]
+        dy, dz = y1 - y0, z1 - z0
+        l = math.hypot(dy, dz) or 1
+        ny, nz = (dz / l, -dy / l) if ccw else (-dz / l, dy / l)
+        for (yy, zz, xx) in ((y0, z0, -hw), (y1, z1, -hw), (y1, z1, hw), (y0, z0, hw)):
+            vw.addData3(x + xx, yy, zz)
+            nw.addData3(0, ny, nz)
+        if ccw:
+            tris.addVertices(idx, idx + 1, idx + 2)
+            tris.addVertices(idx, idx + 2, idx + 3)
+        else:
+            tris.addVertices(idx, idx + 2, idx + 1)
+            tris.addVertices(idx, idx + 3, idx + 2)
+        idx += 4
+    np = _node(parent, "prism", vd, tris)
+    np.setColor(*(color if isinstance(color, tuple) else hexc(color)))
+    return np
+
+
+def add_shape(parent, sh, offset=(0, 0, 0)):
+    """One entry of a part's "model" list: box (default), "cyl" or "prism". Optional "hpr" rotation, "glow"."""
+    ox, oy, oz = offset
+    t = sh.get("t", "box")
+    holder = parent
+    if sh.get("hpr"):
+        holder = parent.attachNewNode("rot")
+        px, py, pz = sh.get("p", (0, 0, 0))
+        holder.setPos(ox + px, oy + py, oz + pz)
+        holder.setHpr(*sh["hpr"])
+        ox = oy = oz = 0
+        sh = dict(sh, p=(0, 0, 0))
+    c = sh.get("c", "#555555")
+    if t == "cyl":
+        px, py, pz = sh.get("p", (0, 0, 0))
+        np = cylinder(holder, (ox + px, oy + py, oz + pz), sh.get("r", 0.01), sh.get("l", 0.05), c, sh.get("r2"),
+                      sh.get("seg", 20), sh.get("axis", "y"))
+    elif t == "prism":
+        pts = [(oy + y, oz + z) for y, z in sh.get("pts", [])]
+        np = prism(holder, ox + sh.get("x", 0), sh.get("w", 0.02), pts, c)
+    else:
+        px, py, pz = sh.get("p", (0, 0, 0))
+        np = box(holder, (ox + px, oy + py, oz + pz), sh.get("s", (0.05, 0.05, 0.05)), c)
+    if sh.get("glow"):
+        np.setLightOff()
+    return np
+
+
 def build_gun(parent, loadout, parts, flatten=True):
     """Returns (NodePath, muzzle_pos). Gun points +Y, origin at back of receiver.
-    Uses the real gun model for the receiver when one is installed, else the box model."""
+    Uses the real gun model for the receiver when one is installed, else the shape model."""
     from . import assets
     real = assets.build_gun_mesh(parent, loadout, parts, build_part)
     if real:
@@ -186,10 +354,9 @@ def build_gun(parent, loadout, parts, flatten=True):
     if not res:
         return root, (0, 0.3, 0)
     lay, muzzle = res
-    for p, (ox, oy, oz) in lay:
-        for b in p.get("model", []):
-            px, py, pz = b.get("p", (0, 0, 0))
-            box(root, (ox + px, oy + py, oz + pz), b.get("s", (0.05, 0.05, 0.05)), b.get("c", "#555555"))
+    for p, off in lay:
+        for sh in p.get("model", []):
+            add_shape(root, sh, off)
     if flatten:
         root.flattenStrong()
     return root, muzzle
@@ -197,8 +364,8 @@ def build_gun(parent, loadout, parts, flatten=True):
 
 def build_part(parent, part):
     root = parent.attachNewNode("part")
-    for b in part.get("model", []):
-        box(root, b.get("p", (0, 0, 0)), b.get("s", (0.05, 0.05, 0.05)), b.get("c", "#555555"))
+    for sh in part.get("model", []):
+        add_shape(root, sh)
     root.flattenStrong()
     return root
 

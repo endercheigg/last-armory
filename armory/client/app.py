@@ -159,6 +159,8 @@ def run(root, extra_prc=""):
             self.save_settings()
 
         def apply_fullscreen(self, on):
+            if not hasattr(self.win, "requestProperties"):
+                return  # offscreen buffer (tests) - nothing to resize
             wp = WindowProperties()
             if on:
                 wp.setFullscreen(True)

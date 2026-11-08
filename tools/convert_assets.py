@@ -82,6 +82,43 @@ for name in ("Basic", "Chubby", "Arm", "Ribcage"):
     np = load(find(rf"zak\**\Characters\glTF\Zombie_{name}.gltf"))
     save(np, f"zombies/{name.lower()}", {"kind": "zombie", "facing": 180})
 
+def vertices(np):
+    from panda3d.core import GeomVertexReader
+    pts = []
+    for gnp in np.findAllMatches("**/+GeomNode"):
+        mat = gnp.getMat(np)
+        for geom in gnp.node().getGeoms():
+            r = GeomVertexReader(geom.getVertexData(), "vertex")
+            while not r.isAtEnd():
+                v = mat.xformPoint(r.getData3())
+                pts.append((v[0], v[1], v[2]))
+    return pts
+
+
+def gun_anchors(np, family):
+    """Measure real mount points from the mesh: barrel tip, top of the receiver, underside of the handguard."""
+    pts = vertices(np)
+    ymax = max(p[1] for p in pts)
+    L = ymax
+
+    def window(y0, y1):
+        return [p for p in pts if y0 * L <= p[1] <= y1 * L] or pts
+
+    tip = [p for p in pts if p[1] >= ymax - 0.012 * L]
+    mx = (min(p[0] for p in tip) + max(p[0] for p in tip)) / 2
+    mz = (min(p[2] for p in tip) + max(p[2] for p in tip)) / 2
+    pistol = family in ("Pistol", "Revolver")
+    top_w = window(0.3, 0.5) if not pistol else window(0.35, 0.7)
+    under_w = window(0.62, 0.82) if not pistol else window(0.6, 0.85)
+    top_z = max(p[2] for p in top_w)
+    under_z = min(p[2] for p in under_w)
+    tw = [p for p in top_w if p[2] >= top_z - 0.004]
+    return {"muzzle": [round(mx, 4), round(ymax, 4), round(mz, 4)],
+            "top": [round(sum(p[0] for p in tw) / len(tw), 4), round((0.4 if not pistol else 0.55) * L, 4), round(top_z, 4)],
+            "under": [round(mx, 4), round((0.72 if not pistol else 0.72) * L, 4), round(under_z, 4)],
+            "bayonet": [round(mx, 4), round(ymax - 0.06 * L, 4), round(mz - 0.022, 4)]}
+
+
 # ---------------------------------------------------------------- guns: point +Y, Z up, back end at y=0
 print("guns")
 LENGTH = {"Pistol": 0.22, "Revolver": 0.3, "SubmachineGun": 0.5, "Bullpup": 0.72, "AssaultRifle": 0.9,
@@ -110,13 +147,8 @@ for path in sorted(glob.glob(os.path.join(SRC, "guns", "**", "OBJ", "*.obj"), re
         c.setScale(1)
     holder.setScale(s)
     holder.flattenStrong()
-    a, b = holder.getTightBounds()
-    h = b[2] - a[2]
-    info = {"kind": "gun", "family": family, "length": round(L, 3),
-            "muzzle": [0, round(b[1], 3), round(a[2] + h * 0.72, 3)],
-            "top": [0, round(b[1] * 0.42, 3), round(b[2], 3)],
-            "under": [0, round(b[1] * 0.7, 3), round(a[2] + h * 0.35, 3)],
-            "grip": [0, round(b[1] * (0.3 if family not in ("Pistol", "Revolver") else 0.25), 3), round(a[2] + h * 0.25, 3)]}
+    info = {"kind": "gun", "family": family, "length": round(L, 3)}
+    info.update(gun_anchors(holder, family))
     save(holder, f"guns/{name}", info)
 
 # ---------------------------------------------------------------- props + vehicles (metres already)

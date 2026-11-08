@@ -115,6 +115,7 @@ def load_content(mods_dir, disabled=(), load_scripts=True):
             "length": p.get("length", 0.2), "mounts": p.get("mounts", {}), "model": p.get("model", []),
             "start": bool(p.get("start", False)), "mod": p["mod"],
             "meshes": p.get("meshes", []), "meshScale": p.get("meshScale", 1.0), "tint": p.get("tint"),
+            "attachScale": p.get("attachScale", 1.0), "builtinSight": bool(p.get("builtinSight", False)),
         }
         part["price"] = p.get("price") or part_price(part)
         out["parts"][pid] = part

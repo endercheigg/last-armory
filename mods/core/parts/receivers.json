@@ -110,7 +110,8 @@
    "Revolver_1",
    "Revolver_2"
   ],
-  "meshScale": 1.0
+  "meshScale": 1.0,
+  "attachScale": 0.55
  },
  {
   "id": "rcv_smg",
@@ -220,7 +221,8 @@
    "SubmachineGun_4",
    "SubmachineGun_5"
   ],
-  "meshScale": 1.0
+  "meshScale": 1.0,
+  "attachScale": 0.85
  },
  {
   "id": "rcv_shotgun",
@@ -565,7 +567,8 @@
    "SniperRifle_2",
    "SniperRifle_3"
   ],
-  "meshScale": 1.0
+  "meshScale": 1.0,
+  "builtinSight": true
  },
  {
   "id": "rcv_lmg",
@@ -948,7 +951,8 @@
    "SniperRifle_6"
   ],
   "meshScale": 1.0,
-  "tint": "#7fd8ff"
+  "tint": "#7fd8ff",
+  "builtinSight": true
  },
  {
   "id": "rcv_launcher",

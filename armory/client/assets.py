@@ -115,11 +115,16 @@ def build_gun_mesh(parent, loadout, parts, box_part_builder):
     muzzle = [v * s for v in info.get("muzzle", [0, 0.5, 0.02])]
     top = [v * s for v in info.get("top", [0, 0.2, 0.05])]
     under = [v * s for v in info.get("under", [0, 0.35, -0.03])]
-    for slot, where in (("sight", top), ("muzzle", muzzle), ("grip", under), ("bayonet", (muzzle[0], muzzle[1] - 0.07, under[2]))):
+    bay = [v * s for v in info.get("bayonet", [muzzle[0], muzzle[1] - 0.07, muzzle[2] - 0.022])]
+    att = rcv.get("attachScale", 1.0)
+    for slot, where in (("sight", top), ("muzzle", muzzle), ("grip", under), ("bayonet", bay)):
+        if slot == "sight" and rcv.get("builtinSight"):
+            continue   # this gun model already has its own scope
         p = parts.get(loadout.get(slot, ""))
         if p and p["slot"] == slot:
             node = box_part_builder(root, p)
             node.setPos(*where)
+            node.setScale(att if slot != "muzzle" else max(att, 0.8))
     root.flattenStrong()
     return root, tuple(muzzle)
 
