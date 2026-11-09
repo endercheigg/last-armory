@@ -63,7 +63,7 @@ def build_town(content, town_id=None, shop_id=None):
         p = {"index": i, "x": pl["x"], "y": pl["y"], "rot": pl.get("rot", 0)}
         for b in shop.get("boxes", []):
             wb = box_to_world(p, b)
-            for k in ("mesh", "invisible"):
+            for k in ("mesh", "invisible", "mat", "tint"):
                 if k in b:
                     wb[k] = b[k]
             boxes.append(wb)

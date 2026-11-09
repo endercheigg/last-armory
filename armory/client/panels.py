@@ -450,6 +450,51 @@ class VendorPanel(Panel):
         self.text("Use items from your inventory (I), or quick-use: H heal, G eat", (0, -0.62), 0.035, H.MUTED, TextNode.ACenter)
 
 
+class ContractPanel(Panel):
+    """The Collector's special orders: build a gun that meets every requirement, hold it, deliver it."""
+    title = "THE COLLECTOR - SPECIAL ORDERS"
+
+    def __init__(self, m):
+        super().__init__(m, 1.15, 0.8)
+
+    def build(self):
+        from ..gun import compute_stats
+        m = self.m
+        guns = m.inv.get("guns", [])
+        held = next((g for g in guns if g["id"] == m.inv.get("held")), None)
+        st = compute_stats(held["parts"], m.parts) if held else None
+        self.text(f"Holding: {held['name']}  ({held.get('cond', 1) * 100:.0f}% condition)" if held else "Hold a gun to check it",
+                  (0, 0.64), 0.04, H.MUTED, TextNode.ACenter)
+        if not m.contracts:
+            self.text("No orders today. Come back tomorrow morning.", (0, 0.2), 0.05, H.MUTED, TextNode.ACenter)
+        y = 0.52
+        for c in m.contracts:
+            done = c.get("done")
+            self.text(c["title"], (-1.08, y), 0.055, H.MUTED if done else H.WHITE)
+            self.text(f"${c['reward']}", (1.08, y), 0.06, H.MUTED if done else H.GOLD, TextNode.ARight)
+            y -= 0.075
+            all_ok = bool(st) and held.get("cond", 1) >= c.get("minCond", 0)
+            for r in c["reqs"]:
+                v = st.get(r["stat"], 0) if st else None
+                good = st is not None and ((r["op"] == ">" and v >= r["value"] - 1e-6) or (r["op"] == "<" and v <= r["value"] + 1e-6)
+                                           or (r["op"] == "=" and abs(v - r["value"]) < 1e-6))
+                all_ok = all_ok and good
+                need = "yes" if r["stat"] == "auto" else (f"at least {r['value']:g}" if r["op"] == ">" else f"at most {r['value']:g}")
+                have = "" if st is None else ("  (yours: " + ("yes" if r["stat"] == "auto" and v else "no" if r["stat"] == "auto" else f"{v:.3g}") + ")")
+                self.text(("[OK] " if good else "[  ] ") + f"{r['label']}: {need}{have}", (-1.0, y), 0.04,
+                          H.GOOD if good else (H.MUTED if done else H.BAD))
+                y -= 0.06
+            self.text(f"[{'OK' if held and held.get('cond', 1) >= c.get('minCond', 0) else '  '}] Condition {c.get('minCond', 0) * 100:.0f}%+",
+                      (-1.0, y), 0.04, H.MUTED)
+            if done:
+                self.text(f"Filled by {done}", (0.75, y + 0.06), 0.045, H.MUTED, TextNode.ACenter)
+            else:
+                self.button("Deliver held gun", (0.75, y + 0.07), lambda cid=c["id"]: m.act({"a": "deliver", "contract": cid}),
+                            0.5, 0.09, hot=True, enabled=all_ok)
+            y -= 0.12
+        self.text("First gunsmith to deliver gets paid. New orders every morning.", (0, -0.72), 0.035, H.MUTED, TextNode.ACenter)
+
+
 class InventoryPanel(Panel):
     title = "INVENTORY"
 

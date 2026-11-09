@@ -1,0 +1,42 @@
+{
+ "brick": {
+  "tile": 2.4,
+  "source": "ambientCG Bricks105 (CC0)"
+ },
+ "plaster": {
+  "tile": 3.0,
+  "source": "ambientCG PaintedPlaster017 (CC0)"
+ },
+ "concrete": {
+  "tile": 3.0,
+  "source": "ambientCG Concrete034 (CC0)"
+ },
+ "corrugated": {
+  "tile": 2.0,
+  "source": "ambientCG CorrugatedSteel005 (CC0)"
+ },
+ "metal": {
+  "tile": 2.0,
+  "source": "ambientCG MetalPlates006 (CC0)"
+ },
+ "siding": {
+  "tile": 2.0,
+  "source": "ambientCG WoodSiding009 (CC0)"
+ },
+ "planks": {
+  "tile": 2.0,
+  "source": "ambientCG WoodFloor043 (CC0)"
+ },
+ "roof": {
+  "tile": 2.5,
+  "source": "ambientCG RoofingTiles013A (CC0)"
+ },
+ "asphalt": {
+  "tile": 4.0,
+  "source": "ambientCG Asphalt031 (CC0)"
+ },
+ "paving": {
+  "tile": 2.5,
+  "source": "ambientCG PavingStones138 (CC0)"
+ }
+}

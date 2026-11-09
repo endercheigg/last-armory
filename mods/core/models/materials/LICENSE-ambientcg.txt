@@ -1,0 +1,11 @@
+Textures from ambientCG.com, licensed under CC0 1.0 Universal (public domain).
+brick: ambientCG Bricks105 (CC0)
+plaster: ambientCG PaintedPlaster017 (CC0)
+concrete: ambientCG Concrete034 (CC0)
+corrugated: ambientCG CorrugatedSteel005 (CC0)
+metal: ambientCG MetalPlates006 (CC0)
+siding: ambientCG WoodSiding009 (CC0)
+planks: ambientCG WoodFloor043 (CC0)
+roof: ambientCG RoofingTiles013A (CC0)
+asphalt: ambientCG Asphalt031 (CC0)
+paving: ambientCG PavingStones138 (CC0)

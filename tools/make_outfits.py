@@ -90,7 +90,7 @@ OUTFITS = {
     "c2": dict(shirt=(225, 222, 210), sleeves="short", pants=(56, 72, 110), shoes=(220, 220, 220)),  # white tee + jeans
     "c3": dict(shirt=(84, 98, 62), sleeves="long", pants=(70, 62, 52), shoes=(40, 32, 26)),     # field jacket
     "c4": dict(shirt=(120, 122, 128), sleeves="long", pants=(40, 40, 44), shoes=(30, 30, 30)),   # grey hoodie
-    "c5": dict(shirt=(110, 72, 44), sleeves="long", pants=(64, 56, 48), shoes=(50, 36, 26)),     # brown coat
+    "c5": dict(shirt=(54, 70, 96), sleeves="long", pants=(64, 56, 48), shoes=(50, 36, 26)),      # navy jacket
     # zombies: ragged clothes, sickly skin, bare feet
     "z0": dict(shirt=(90, 86, 80), sleeves="short", pants=(46, 56, 84), shoes=None, skin=(0.55, 0.72, 0.48)),
     "z1": dict(shirt=(62, 70, 58), sleeves="none", pants=(70, 64, 54), shoes=None, skin=(0.6, 0.68, 0.5)),

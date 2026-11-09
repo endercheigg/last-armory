@@ -45,6 +45,8 @@ class Match:
         self.tod = 0.0
         self.pvp = False
         self.out_count = 0
+        self.blood = False
+        self.contracts = []
         self.me_state = {}
         app.accept("escape", self.on_escape)
         app.accept("i", self.open_inventory)
@@ -63,6 +65,7 @@ class Match:
         content = {"towns": w["towns"], "shops": w["shops"]}
         self.town = build_town(content, w.get("town"), w.get("shop"))
         self.outside = w.get("outside")
+        self.contracts = w.get("contracts", [])
         self.stats_cache = {}
 
     # ---------------------------------------------------------------- data helpers
@@ -263,6 +266,7 @@ class Match:
                 self.is_night = bool(m.get("night"))
                 self.pvp = bool(m.get("pvp"))
                 self.out_count = m.get("out", 0)
+                self.blood = bool(m.get("bm"))
                 self.me_state = m.get("me", {})
                 self.ensure_zone(m.get("zone", "town"))
                 v = self.view
@@ -288,6 +292,13 @@ class Match:
                 self.hud.show_toast(f"{m['buyer']} bought your {m['gun']} for ${m['price']}!", bad=False, dur=3)
         elif t == "crafted" and m["p"] == self.me:
             self.hud.show_toast(f"Assembled: {m['gun']['name']}  (worth ${m['gun']['value']})", bad=False)
+        elif t == "contracts":
+            self.contracts = m["list"]
+            if self.panel and type(self.panel).__name__ == "ContractPanel":
+                self.panel.refresh()
+        elif t == "drop":
+            self.hud.show_toast("SUPPLY DROP incoming outside!", bad=False, dur=4)
+            self.app.sounds.play("cash", 0.5)
         elif t == "toast":
             self.hud.show_toast(m["msg"], bool(m.get("bad", 1)))
             self.app.sounds.play("gate_bad", 0.4)
@@ -440,7 +451,10 @@ class Match:
             self.hud.sub.setText(f"Starting in {self.phase_left:.0f}s  -  {len(self.infos)} gunsmiths" if self.phase_left > 0 else "Waiting for players...")
         elif ph == "game":
             self.hud.title.setText(f"DAY {self.day} / {days}   {self.clock_text()}")
-            self.hud.sub.setText("NIGHT - no customers, more zombies outside. Sleep!" if self.is_night else "The shops are open")
+            if self.blood:
+                self.hud.sub.setText("BLOOD MOON - zombies everywhere, double bounty outside")
+            else:
+                self.hud.sub.setText("NIGHT - no customers, more zombies outside. Sleep!" if self.is_night else "The shops are open")
             if self.zone == "outside":
                 if self.pvp:
                     self.hud.zone.setText(f"OUTSIDE - PVP ON  ({self.out_count} players out)")

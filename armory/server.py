@@ -37,6 +37,9 @@ DEFAULT_CONFIG = {
     "nightMinutes": 3,
     "startCash": 400,
     "pvpMinPlayers": 2,
+    "airdropMinutes": 3,
+    "bloodMoonEvery": 3,
+    "contracts": 2,
     "town": "",
     "outside": "",
     "disabledMods": [],
@@ -48,6 +51,24 @@ CUSTOMER_NAMES = ["Martha", "Old Joe", "Dina", "Sergei", "Pip", "Rosa", "Big Tom
 
 def log(*a):
     print(time.strftime("[%H:%M:%S]"), *a, flush=True)
+
+
+CONTRACT_STATS = {   # stat -> (label, direction): ">" means at least, "<" at most, "=" exactly
+    "damage": ("Damage", ">"), "fireRate": ("Fire rate", ">"), "magSize": ("Magazine", ">"), "auto": ("Full-auto", "="),
+    "pellets": ("Pellets", ">"), "range": ("Range", ">"), "zoom": ("Zoom", ">"), "headshot": ("Headshot x", ">"),
+    "moveSpeed": ("Handling", ">"), "spread": ("Spread", "<"), "recoil": ("Recoil", "<"), "reloadTime": ("Reload time", "<"),
+}
+CONTRACT_TITLES = ["The Sheriff's order", "A duke's commission", "Militia requisition", "Bounty hunter special",
+                   "Mercenary order", "Caravan guard kit", "Hunter's request", "Collector's whim", "Bunker defence order"]
+
+
+def meets(stats, req):
+    v = stats.get(req["stat"], 0)
+    if req["op"] == ">":
+        return v >= req["value"] - 1e-6
+    if req["op"] == "<":
+        return v <= req["value"] + 1e-6
+    return abs(v - req["value"]) < 1e-6
 
 
 class Body:
@@ -216,6 +237,10 @@ class Game:
         self.loot = {}
         self.loot_t = 0.0
         self.winner_id = 0
+        self.contracts = []
+        self.next_contract = 1
+        self.drop_t = 0.0
+        self.blood = False
         self.load()
 
     # ------------------------------------------------------------ content
@@ -261,7 +286,7 @@ class Game:
                            "pvpMin": self.config["pvpMinPlayers"]},
                 "content": client_payload(self.content), "town": self.world["town"]["id"],
                 "shop": self.world["shop"]["id"], "towns": self.content["towns"], "shops": self.content["shops"],
-                "outside": self.outside, "phase": self.phase_msg()}
+                "outside": self.outside, "phase": self.phase_msg(), "contracts": self.contracts}
 
     # ------------------------------------------------------------ helpers
     def effects(self, p):
@@ -447,6 +472,8 @@ class Game:
         self.customers.clear()
         self.zombies.clear()
         self.loot.clear()
+        self.blood = False
+        self.drop_t = random.uniform(0.4, 0.6) * float(self.config.get("airdropMinutes", 3.0)) * 60
         for p in self.players.values():
             self.reset_player(p)
             self.roll_stock(p)
@@ -456,6 +483,8 @@ class Game:
         log("Game started")
 
     def morning(self):
+        self.blood = False
+        self.make_contracts()
         self.hook("on_day_start", self.day)
         self.chat_all(f"Day {self.day} of {self.config['days']} - the shops are open!", "#ffd75e")
         for p in self.players.values():
@@ -466,8 +495,13 @@ class Game:
         self.dirty = True
 
     def evening(self):
+        every = int(self.config.get("bloodMoonEvery", 3))
+        self.blood = bool(every) and (self.day % every == 0 or self.day == self.config["days"])
         self.hook("on_night_start", self.day)
-        self.chat_all("Night falls. Customers go home - zombies come out. Get some sleep!", "#9ab0ff")
+        if self.blood:
+            self.chat_all("BLOOD MOON! Zombies swarm the wasteland - double bounty on every kill tonight.", "#ff4a3a")
+        else:
+            self.chat_all("Night falls. Customers go home - zombies come out. Get some sleep!", "#9ab0ff")
         for c in list(self.customers.values()):
             self.customer_leave(c, "Getting dark...")
 
@@ -478,6 +512,126 @@ class Game:
             self.chat_all(f"{best.name} is the richest gunsmith with ${best.cash}!", "#ffb347")
         self.hook("on_match_end", best)
         self.set_phase("results", 15)
+
+    # ------------------------------------------------------------ the Collector's contracts
+    def make_contracts(self):
+        """Each morning the Collector posts special orders, built from a real random gun so they're always possible."""
+        parts = self.content["parts"]
+        cap = min(4, 1 + self.day // 2)
+        by_slot = {}
+        for q in parts.values():
+            if q["tier"] <= cap:
+                by_slot.setdefault(q["slot"], []).append(q)
+        self.contracts = []
+        if not all(by_slot.get(sl["id"]) for sl in SLOTS if sl["required"]):
+            return
+        titles = random.sample(CONTRACT_TITLES, k=min(len(CONTRACT_TITLES), int(self.config.get("contracts", 2))))
+        for title in titles:
+            loadout = {sl["id"]: random.choice(by_slot[sl["id"]])["id"] for sl in SLOTS
+                       if sl["required"] or (by_slot.get(sl["id"]) and random.random() < 0.55)}
+            st = compute_stats(loadout, parts)
+            keys = [k for k in CONTRACT_STATS if k != "auto"]
+            random.shuffle(keys)
+            keys.sort(key=lambda k: 0 if k in ("damage", "fireRate", "magSize", "range") else 1)
+            base = compute_stats(self.start_kit, parts)
+            reqs = []
+            if st["auto"] and not base["auto"] and random.random() < 0.6:
+                reqs.append({"stat": "auto", "op": "=", "value": 1, "label": "Full-auto"})
+            for k in keys:
+                if len(reqs) >= 3:
+                    break
+                label, op = CONTRACT_STATS[k]
+                v = st[k]
+                if op == ">":
+                    v = int(v * 0.93) if k in ("magSize", "pellets") or v >= 10 else round(v * 0.93, 1)
+                else:
+                    v = round(v * 1.08 + 0.05, 1)
+                r = {"stat": k, "op": op, "value": v, "label": label}
+                if meets(base, r):      # the starter gun already does that - not a real order
+                    continue
+                reqs.append(r)
+            if not reqs:
+                continue
+            reward = int(round((gun_value(loadout, parts) * 3.0 + 200 * self.day + random.randint(0, 150)) / 10.0) * 10)
+            self.contracts.append({"id": self.next_contract, "title": title, "reqs": reqs, "reward": reward,
+                                   "minCond": 0.6, "done": ""})
+            self.next_contract += 1
+        self.send_all({"t": "contracts", "list": self.contracts})
+
+    def deliver(self, p, cid):
+        c = next((c for c in self.contracts if c["id"] == cid), None)
+        v = next((v for v in self.world["vendors"] if v.get("kind") == "collector"), None)
+        if not c or not v:
+            return
+        if c["done"]:
+            return self.fail(p, f"{c['done']} already filled that order")
+        if p.zone != "town" or not self.near(p, v["pos"], 4.0):
+            return self.fail(p, "Bring the gun to the Collector's stall")
+        g = p.held_gun()
+        if not g:
+            return self.fail(p, "Hold the gun you want to deliver")
+        if len(p.guns) <= 1:
+            return self.fail(p, "Keep at least one gun to defend yourself!")
+        if g.get("cond", 1.0) < c["minCond"]:
+            return self.fail(p, "The Collector wants it clean (60%+ condition)")
+        st = compute_stats(g["parts"], self.content["parts"])
+        miss = [r["label"] for r in c["reqs"] if not meets(st, r)]
+        if miss:
+            return self.fail(p, "Doesn't meet: " + ", ".join(miss))
+        p.guns.remove(g)
+        p.held = p.guns[0]["id"]
+        self.restat(p)
+        c["done"] = p.name
+        self.give_cash(p, c["reward"], f"Contract: {c['title']}")
+        self.chat_all(f"{p.name} filled '{c['title']}' for ${c['reward']}!", "#c08bff")
+        self.hook("on_contract", p, c)
+        self.send_all({"t": "contracts", "list": self.contracts})
+        p.inv_dirty = True
+
+    # ------------------------------------------------------------ supply drops
+    def drop_tick(self, now):
+        for b in [b for b in self.loot.values() if b.get("drop") and now > b["expire"]]:
+            del self.loot[b["id"]]
+            self.events.append({"t": "loot_gone", "id": b["id"]})
+        mins = float(self.config.get("airdropMinutes", 3.0))
+        if mins <= 0:
+            return
+        self.drop_t -= DT
+        if self.drop_t > 0:
+            return
+        self.drop_t = random.uniform(0.8, 1.3) * mins * 60
+        if any(b.get("drop") for b in self.loot.values()):
+            return
+        pts = (self.outside.get("loot") or []) + [q[:2] for q in self.outside.get("spawns", [])]
+        if not pts:
+            return
+        s = random.choice(pts)
+        x, y = s[0] + random.uniform(-2, 2), s[1] + random.uniform(-2, 2)
+        W, D = self.outside["size"]
+        x, y = min(W - 2, max(2, x)), min(D - 2, max(2, y))
+        b = {"id": self.next_loot, "pos": [round(x, 2), round(y, 2), 0], "drop": True, "land": now + 9, "expire": now + 160}
+        self.next_loot += 1
+        self.loot[b["id"]] = b
+        self.chat_all("SUPPLY DROP falling in the wasteland! Rare parts, cash and armor - first come, first served.", "#ff9a3a")
+        self.events.append({"t": "drop", "x": b["pos"][0], "y": b["pos"][1]})
+
+    def open_drop(self, p):
+        parts = [q for q in self.content["parts"].values() if not q["start"]]
+        top = min(4, 2 + self.day // 2)
+        pool = [q for q in parts if 2 <= q["tier"] <= top] or parts
+        got = []
+        for _ in range(2):
+            q = random.choice(pool)
+            p.parts[q["id"]] = p.parts.get(q["id"], 0) + 1
+            got.append(q["name"])
+        self.give_cash(p, int(random.randint(200, 380) * (1 + 0.25 * (self.day - 1))), "Supply drop")
+        for iid in ("heavy_shield", "medkit"):
+            if iid in self.content["items"]:
+                p.items[iid] = p.items.get(iid, 0) + 1
+                got.append(self.content["items"][iid]["name"])
+        self.send(p, {"t": "toast", "msg": "Supply drop: " + ", ".join(got), "bad": 0})
+        self.chat_all(f"{p.name} grabbed the supply drop!", "#ff9a3a")
+        p.inv_dirty = True
 
     # ------------------------------------------------------------ actions
     def act(self, p, m):
@@ -644,11 +798,18 @@ class Game:
             self.return_to_town(p)
         elif a == "loot":
             box = self.loot.get(m.get("id"))
-            if not box or p.zone != "outside" or not self.near(p, box["pos"], 2.6):
+            if not box or p.zone != "outside" or not self.near(p, box["pos"], 3.0 if box.get("drop") else 2.6):
                 return
+            if box.get("drop") and time.monotonic() < box["land"]:
+                return self.fail(p, "It's still coming down!")
             del self.loot[box["id"]]
             self.events.append({"t": "loot_gone", "id": box["id"]})
-            self.open_loot(p)
+            if box.get("drop"):
+                self.open_drop(p)
+            else:
+                self.open_loot(p)
+        elif a == "deliver":
+            self.deliver(p, m.get("contract"))
         elif a == "clean_start":
             g = next((g for g in p.guns if g["id"] == m.get("gid")), None)
             bench = self.plot_of(p).get("clean")
@@ -986,7 +1147,7 @@ class Game:
                 self.zombies.pop(victim.id, None)
                 if isinstance(attacker, Player):
                     attacker.zkills += 1
-                    reward = victim.type.get("reward", 15) * (1.5 if self.is_night else 1.0)
+                    reward = victim.type.get("reward", 15) * (2.0 if self.blood else (1.5 if self.is_night else 1.0))
                     self.give_cash(attacker, reward, f"{victim.type.get('name', 'Zombie')} killed")
                     self.hook("on_zombie_kill", victim, attacker)
                 self.events.append({"t": "zdead", "id": victim.id})
@@ -1064,15 +1225,16 @@ class Game:
                 self.zombies.clear()
             return
         self.empty_since = now
-        cap = (6 + 3 * len(outs) + self.day) * (2 if self.is_night else 1)
+        cap = (6 + 3 * len(outs) + self.day) * (2 if self.is_night else 1) * (1.5 if self.blood else 1)
         self.zombie_t -= DT
-        if self.zombie_t <= 0 and len(self.zombies) < min(45, cap):
+        if self.zombie_t <= 0 and len(self.zombies) < min(60 if self.blood else 45, cap):
             for _ in range(random.randint(1, 2 + (2 if self.is_night else 0))):
                 self.spawn_zombie()
-            self.zombie_t = random.uniform(2.5, 5.0) / (1.6 if self.is_night else 1.0)
+            self.zombie_t = random.uniform(2.5, 5.0) / (1.6 if self.is_night else 1.0) / (1.5 if self.blood else 1.0)
         self.loot_t -= DT
         spots = self.outside.get("loot") or []
-        if spots and self.loot_t <= 0 and len(self.loot) < max(3, len(spots) // 2):
+        crates = [b for b in self.loot.values() if not b.get("drop")]
+        if spots and self.loot_t <= 0 and len(crates) < max(3, len(spots) // 2):
             taken = {tuple(b["pos"][:2]) for b in self.loot.values()}
             free = [s for s in spots if tuple(s[:2]) not in taken]
             if free:
@@ -1194,6 +1356,7 @@ class Game:
                         self.evening()
                 self.move_tick(now)
                 self.customers_tick(now)
+                self.drop_tick(now)
                 self.outside_tick(now)
         elif ph == "results" and now >= self.phase_end:
             self.phase, self.phase_end = "lobby", 0.0
@@ -1242,7 +1405,8 @@ class Game:
                 for c in self.customers.values()]
         zomb = [[z.id, round(z.s["x"], 2), round(z.s["y"], 2), round(z.s["z"], 2), round(z.h), z.type_index,
                  math.ceil(z.hp), math.ceil(z.max_hp)] for z in self.zombies.values()]
-        loot = [[b["id"]] + b["pos"] for b in self.loot.values()]
+        loot = [[b["id"]] + b["pos"] + ([1, round(max(0.0, b["land"] - now), 1)] if b.get("drop") else [0, 0])
+                for b in self.loot.values()]
         pvp = self.pvp_on()
         for p in self.players.values():
             me = {"ammo": p.ammo, "reload": round(max(0, p.reload_until - now), 2), "ack": p.ack,
@@ -1253,7 +1417,7 @@ class Game:
                   "resp": round(max(0, p.respawn_at - now), 1) if not p.alive else 0}
             msg = {"t": "s", "ph": "game", "zone": p.zone, "p": rows[p.zone], "me": me, "left": left,
                    "day": day, "tod": round(frac, 4), "night": 1 if night else 0, "pvp": 1 if pvp else 0,
-                   "out": len(self.outside_players())}
+                   "out": len(self.outside_players()), "bm": 1 if self.blood else 0}
             if p.zone == "town":
                 msg["c"] = cust
             else:

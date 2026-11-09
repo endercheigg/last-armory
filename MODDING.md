@@ -76,6 +76,10 @@ A customer values a gun at `worth × (0.75 + 0.45 × match)`, where `match = sta
 ## Arenas (night)
 `size`, `boxes` (`x y z w d h color`, min corner), `spawns [[x, y, z, heading]]`, `zspawns [[x, y]]`, plus colours and `fogDensity`.
 
+## Materials (what walls look like)
+Any box can pick a texture with `"mat"`: `brick`, `plaster`, `concrete`, `corrugated`, `metal`, `siding`, `planks`, `roof`, `asphalt` or `paving`, plus an optional `"tint": "#rrggbb"`. Textures repeat every couple of metres instead of stretching, so a 100 m wall looks as sharp as a crate. Boxes without `"mat"` get one guessed from their `color`. Towns and arenas pick their floor with `"groundMat"`.
+Add your own material by dropping `<name>_color.jpg` and `<name>_normal.jpg` (OpenGL normal map) into your mod's `models/materials/`, with an optional `materials.json` like `{"<name>": {"tile": 2.5}}` (metres per repeat).
+
 ## patches.json
 ```json
 { "rcv_railgun": { "price": 500 }, "decor": { "levels": [ { "cost": 50, "effects": { "attract": 3 } } ] }, "brl_twin": { "hidden": true } }
@@ -90,6 +94,7 @@ def on_customer(api, customer)                # dict: name, pref, budget, tol ..
 def on_sale(api, seller, buyer_name, gun, price)
 def on_craft(api, player, gun)
 def on_damage(api, event)                     # victim, attacker, amount, head, cancel
+def on_contract(api, player, contract)        # a Collector order was filled
 def on_kill(api, victim, killer)
 def on_zombie_kill(api, zombie, killer)
 def on_tick(api, dt, phase)
@@ -115,7 +120,7 @@ If a player is missing a model that a server references, the game draws the box 
 { "id": "burger", "name": "Wasteland Burger", "kind": "food", "value": 70, "energy": 5, "price": 28 }
 ```
 Kinds: `food` (+hunger), `drink` (+energy), `heal` (+health), `armor` (shields, worn on purchase, max 50), `tool` (`cleaning_kit` cleans one gun).
-Stalls are listed in the town JSON: `"vendors": [{"id", "name", "kind", "x", "y", "h", "color", "items": [ids]}]`.
+Stalls are listed in the town JSON: `"vendors": [{"id", "name", "kind", "x", "y", "h", "color", "items": [ids]}]`. A stall with `"kind": "collector"` is where players deliver the Collector's special orders.
 
 ## The wasteland (`arenas/*.json`)
 Besides `boxes`/`props`/`spawns`/`zspawns`: `entry` (where players arrive), `exits` (walk here and press E to go back to town), `loot` (supply crate spots), plus `day` and `night` colour sets. Choose which arena is outside with `"outside"` in `server_config.json`.

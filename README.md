@@ -20,11 +20,14 @@ A first-person, multiplayer gunsmith game set in a zombie-apocalypse outpost. Th
 - **Ma's Diner:** food (a hunger meter drains, and starving hurts) and coffee/energy drinks.
 - **Field Clinic:** bandages and medkits.
 - **Ironside Supply:** light (25) and heavy (50) shields, and cleaning kits.
+- **The Collector:** posts **special orders** every morning, such as "full-auto, magazine 27+, recoil 0.3 or less". Build a gun that meets every requirement, hold it, and deliver it for a big payout (often $900-1500+). Only the first gunsmith to deliver gets paid.
 
 ### Outside (zombies + PvP)
 Walk to a town gate to go out into the wasteland.
 - Zombies roam there all the time, with more and tougher ones at night. Kills pay cash.
 - Supply crates hold parts, cash and items.
+- **Supply drops:** every few minutes a crate parachutes into the wasteland, marked by an orange smoke beam you can see from anywhere. It holds 2 rare parts, cash, a heavy shield and a medkit. Everyone is told when one falls, so expect a fight over it.
+- **Blood Moon:** every 3rd night (and the last night) the sky turns red, zombies swarm in far greater numbers, and every zombie kill pays double.
 - **PvP is only on while 2 or more players are outside.** A kill loots 25% of the victim's cash.
 - Damage works like Valorant: you have 100 HP plus shields, and shields soak damage first. Rifles do 40 to the body and 160 to the head (a one-tap even through heavy shields); the revolver, marksman and railgun one-shot heads too, while pistols and SMGs need more hits. Legs take 85%.
 
@@ -74,6 +77,9 @@ python3 LastArmory.py
 | maxPlayers | 8 | one shop per player (8 plots in the default town) |
 | password | "" | |
 | pvpMinPlayers | 2 | players outside needed for PvP |
+| airdropMinutes | 3 | average minutes between supply drops (0 = off) |
+| bloodMoonEvery | 3 | every Nth night is a Blood Moon, plus the last night (0 = off) |
+| contracts | 2 | Collector special orders posted each morning |
 | days | 5 | |
 | dayMinutes / nightMinutes | 6 / 3 | |
 | outside | "" | wasteland arena id |
@@ -91,4 +97,4 @@ Everything is JSON in `mods/`: gun parts (real gun models or box models), upgrad
 Built with Python and [Panda3D](https://www.panda3d.org), using free CC0 3D models (see Credits) and synthesized sounds. An original game inspired by the gun-shop simulator genre.
 
 ## Credits
-3D models: Quaternius (Zombie Apocalypse Kit, Ultimate Gun Pack, Universal Base Characters, Universal Animation Library 1 & 2) and Kenney (Furniture Kit), all CC0 / public domain. Licence files are in `mods/core/models/`. To rebuild the models from the original packs, put the zips in `assets_src/` and run `python tools/convert_assets.py`, `python tools/convert_characters.py` and `python tools/make_outfits.py` (needs `pip install panda3d-gltf pillow`; the game itself needs neither).
+Building textures: [ambientCG](https://ambientcg.com) photo-scanned materials (CC0); rebuild them with `python tools/convert_materials.py`. 3D models: Quaternius (Zombie Apocalypse Kit, Ultimate Gun Pack, Universal Base Characters, Universal Animation Library 1 & 2) and Kenney (Furniture Kit), all CC0 / public domain. Licence files are in `mods/core/models/`. To rebuild the models from the original packs, put the zips in `assets_src/` and run `python tools/convert_assets.py`, `python tools/convert_characters.py` and `python tools/make_outfits.py` (needs `pip install panda3d-gltf pillow`; the game itself needs neither).

@@ -10,6 +10,7 @@ from ..town import arena_boxes
 from ..sim import EYE_H, aim_vec, box_tuple, move_player, ray_world
 from . import hud as H
 from . import assets as A
+from . import materials as MAT
 from . import geom as G
 from . import panels as P
 from .geom import (PLAYER_COLORS, Character, box, box_min, build_gun, bounds_center, grid_texture, hexc, mix,
@@ -262,7 +263,8 @@ class LobbyView:
 class FPSView:
     night = False
 
-    def __init__(self, m, boxes, size, light, ambient, sky, fog_color, fog_density, ground_color, ground_extra=60, props=()):
+    def __init__(self, m, boxes, size, light, ambient, sky, fog_color, fog_density, ground_color, ground_extra=60, props=(),
+                 ground_mat="concrete"):
         self.m = m
         app = m.app
         self.size = size
@@ -279,13 +281,19 @@ class FPSView:
         W, D = size
         self.sun, self.amb = make_lights(self.root, light, ambient, film=min(90, max(W, D) * 1.2))
         self.sun.setPos(W / 2, D / 2, 0)
-        g = box(self.static, (W / 2, D / 2, -0.25), (W + ground_extra * 2, D + ground_extra * 2, 0.5), hexc(ground_color))
-        g.setTexture(grid_texture(cells=2, line=0.9))
-        g.setTexScale(TextureStage.getDefault(), (W + ground_extra * 2) / 4, (D + ground_extra * 2) / 4)
+        mats = MAT.Builder(self.static)
+        ge = ground_extra
+        if not mats.add(-ge, -ge, -0.5, W + ge * 2, D + ge * 2, 0.5, ground_mat, MAT.tint_for({"color": ground_color})):
+            g = box(self.static, (W / 2, D / 2, -0.25), (W + ge * 2, D + ge * 2, 0.5), hexc(ground_color))
+            g.setTexture(grid_texture(cells=2, line=0.9))
+            g.setTexScale(TextureStage.getDefault(), (W + ge * 2) / 4, (D + ge * 2) / 4)
         blocks = self.static.attachNewNode("blocks")
         models = self.root.attachNewNode("models")  # not flattened: keeps per-model tints
         for b in boxes:
+            if not b.get("invisible") and not (b.get("mesh") and A.has(b["mesh"])) and mats.add_box(b):
+                continue
             place_box(models, b, blocks)
+        mats.finish()
         blocks.setTexture(grid_texture(line=0.9, cells=2))
         for pr in props:
             place_prop(models, pr)
@@ -347,9 +355,14 @@ class FPSView:
     def set_palettes(self, day, night):
         self.palettes = {"day": day, "night": night}
 
-    def apply_palette(self, night):
+    BLOOD = {"skyColor": "#2a0606", "fogColor": "#3a0b0b", "ambient": "#5a2a2a", "lightColor": "#ff6a4a", "fogDensity": 0.02}
+
+    def apply_palette(self, night, blood=False):
         pal = self.palettes.get("night" if night else "day")
         self.night_on = night
+        self.blood_on = blood
+        if blood and night:
+            pal = dict(pal or {}, **self.BLOOD)
         if not pal:
             return
         app = self.m.app
@@ -614,8 +627,8 @@ class FPSView:
                 if now - t0 > 4:
                     c.root.hide()
         m.alive_count = len(alive_ids)
-        if m.is_night != self.night_on:
-            self.apply_palette(m.is_night)
+        if m.is_night != self.night_on or m.blood != getattr(self, "blood_on", False):
+            self.apply_palette(m.is_night, m.blood)
         self.torch.setPos(app.camera.getPos(app.render))
         self.torch.setHpr(app.camera.getHpr(app.render))
         self.update_world(dt, now)
@@ -733,7 +746,7 @@ class TownView(FPSView):
         t = world["town"]
         super().__init__(m, world["boxes"], world["size"], t.get("lightColor", "#fff2dc"), t.get("ambient", "#8a90a0"),
                          t.get("skyColor", "#a9c3d9"), t.get("fogColor", "#b9c9d6"), t.get("fogDensity", 0.006),
-                         t.get("groundColor", "#7b6d58"), props=world.get("props", []))
+                         t.get("groundColor", "#7b6d58"), props=world.get("props", []), ground_mat=t.get("groundMat", "paving"))
         self.world = world
         for b in t.get("roads", []):
             box_min(self.static, b["x"], b["y"], b.get("z", 0), b["w"], b["d"], b["h"], hexc(b.get("color", "#666666")))
@@ -908,6 +921,9 @@ class TownView(FPSView):
             return "[E] Go outside  (zombies - PvP when 2+ players are out)", True
         if o["kind"] == "vendor":
             v = next((v for v in self.world["vendors"] if v["id"] == o["vendor"]), None)
+            if v and v.get("kind") == "collector":
+                open_n = sum(1 for c in m.contracts if not c.get("done"))
+                return f"[E] The Collector - {open_n} special order{'s' if open_n != 1 else ''}", True
             return (f"[E] {v['name']}" if v else None), bool(v)
         mine = m.infos.get(m.me, {}).get("plot") == o["plot"]
         owner = next((i for i in m.infos.values() if i["plot"] == o["plot"]), None)
@@ -939,7 +955,9 @@ class TownView(FPSView):
             return
         if o["kind"] == "vendor":
             v = next((v for v in self.world["vendors"] if v["id"] == o["vendor"]), None)
-            if v:
+            if v and v.get("kind") == "collector":
+                m.open_panel(P.ContractPanel(m))
+            elif v:
                 m.open_panel(P.VendorPanel(m, v))
             return
         if o["kind"] == "bed" and mine:
@@ -1007,7 +1025,7 @@ class OutsideView(FPSView):
     def __init__(self, m, a):
         super().__init__(m, arena_boxes(a), a["size"], a.get("lightColor", "#9ab0ff"), a.get("ambient", "#3a4258"),
                          a.get("skyColor", "#0b0f1a"), a.get("fogColor", "#141a28"), a.get("fogDensity", 0.03),
-                         a.get("groundColor", "#3a3d42"), props=a.get("props", []))
+                         a.get("groundColor", "#3a3d42"), props=a.get("props", []), ground_mat=a.get("groundMat", "asphalt"))
         self.static.flattenStrong()
         self.arena = a
         self.count_shown = 0
@@ -1043,6 +1061,11 @@ class OutsideView(FPSView):
             return "[E] Return to town", True
         if o["kind"] == "loot":
             return "[E] Search the supply crate", True
+        if o["kind"] == "drop":
+            row = next((r for r in (self.last_loot or []) if r[0] == o["loot"]), None)
+            if row and row[5] > 0:
+                return f"Supply drop landing in {row[5]:.0f}s...", False
+            return "[E] Open the SUPPLY DROP", True
         return None, False
 
     def interact(self):
@@ -1051,7 +1074,7 @@ class OutsideView(FPSView):
             return
         if o["kind"] == "exit":
             self.m.act({"a": "go_town"})
-        elif o["kind"] == "loot":
+        elif o["kind"] in ("loot", "drop"):
             self.m.act({"a": "loot", "id": o["loot"]})
 
     last_loot = None
@@ -1108,16 +1131,45 @@ class OutsideView(FPSView):
             if lid not in loot:
                 self.on_loot_gone({"id": lid})
         for lid, r in loot.items():
+            drop = len(r) > 4 and r[4]
             if lid not in self.crates:
                 n = self.root.attachNewNode("crate")
                 n.setPos(r[1], r[2], r[3])
-                if not place_prop(n, {"mesh": "props/Chest", "x": 0, "y": 0, "s": 0.9}):
-                    box(n, (0, 0, 0.4), (0.9, 0.6, 0.8), hexc("#8a6a3d"))
-                glow = box(n, (0, 0, 3), (0.12, 0.12, 6), hexc("#ffd75e"))
-                glow.setLightOff()
-                set_alpha(glow, 0.3)
+                body = n.attachNewNode("body")
+                if not place_prop(body, {"mesh": "props/Chest", "x": 0, "y": 0, "s": 1.6 if drop else 0.9}):
+                    box(body, (0, 0, 0.4), (0.9, 0.6, 0.8), hexc("#8a6a3d"))
+                if drop:   # supply drop: smoke beam you can see from anywhere, parachute while it falls
+                    body.setColorScale(1.7, 1.15, 0.55, 1)
+                    beam = box(n, (0, 0, 30), (0.5, 0.5, 60), hexc("#ff7a2a"))
+                    beam.setLightOff()
+                    beam.setFogOff()
+                    set_alpha(beam, 0.35)
+                    chute = n.attachNewNode("chute")
+                    canopy = sphere_geom().copyTo(chute)
+                    canopy.setColor(hexc("#e8e2d0"))
+                    canopy.setScale(2.4, 2.4, 1.0)
+                    canopy.setZ(5.0)
+                    for sx in (-1, 1):
+                        for sy in (-1, 1):
+                            cord = box(chute, (sx * 1.0, sy * 1.0, 3.2), (0.03, 0.03, 3.6), hexc("#333333"))
+                            cord.lookAt(chute, 0, 0, 1.4)
+                    n.setPythonTag("chute", chute)
+                    n.setPythonTag("body", body)
+                else:
+                    glow = box(n, (0, 0, 3), (0.12, 0.12, 6), hexc("#ffd75e"))
+                    glow.setLightOff()
+                    set_alpha(glow, 0.3)
                 self.crates[lid] = n
-                self.objects.append({"kind": "loot", "loot": lid, "pos": [r[1], r[2], 0.8], "range": 2.6})
+                self.objects.append({"kind": "drop" if drop else "loot", "loot": lid, "pos": [r[1], r[2], 0.8],
+                                     "range": 3.0 if drop else 2.6})
+            if drop:
+                n = self.crates[lid]
+                fall = max(0.0, r[5]) * 5.0
+                body, chute = n.getPythonTag("body"), n.getPythonTag("chute")
+                body.setZ(fall)
+                chute.setZ(fall)
+                if fall <= 0 and not chute.isHidden():
+                    chute.hide()
         types = list(m.content.get("zombies", {}).values())
         for item in [d for d in self.dying if d[0] < now]:
             self.dying.remove(item)
