@@ -71,7 +71,7 @@ A customer values a gun at `worth × (0.75 + 0.45 × match)`, where `match = sta
 
 ## Towns and shops
 - **Town:** `size`, `boxes` (static props and walls), `plots` (`x`, `y`, `rot` in 0/90/180/270), `gates` (where customers come from), `plaza`, plus colours (`groundColor`, `skyColor`, `fogColor`, `lightColor`, `ambient`) and `roads` (decoration).
-- **Shop template:** uses local coordinates, with the door at y=0 and the interior at +y. It contains `boxes`, `door`, `browse` (where customers stand), `spawn [x, y, heading]`, `workbench`, `terminal`, `board`, `shelves [[x, y, z, heading]...]`, `targets`, `decor` (box lists per upgrade level), `sign`, `awning` and `signText`.
+- **Shop template:** uses local coordinates, with the door at y=0 and the interior at +y. It contains `boxes`, `door`, `browse` (where customers stand), `spawn [x, y, heading]`, `workbench`, `terminal`, `board`, `shelves [[x, y, z, heading]...]`, `targets`, `decor` (box lists per upgrade level), `sign`, `awning` and `signText`. Optional service window: `service` (where the owner presses E), `serviceSpot` (where clients queue outside) and `serviceSign` (`[x, y, z]` of the GUN CLEANING sign).
 
 ## Arenas (night)
 `size`, `boxes` (`x y z w d h color`, min corner), `spawns [[x, y, z, heading]]`, `zspawns [[x, y]]`, plus colours and `fogDensity`.
@@ -95,6 +95,7 @@ def on_sale(api, seller, buyer_name, gun, price)
 def on_craft(api, player, gun)
 def on_damage(api, event)                     # victim, attacker, amount, head, cancel
 def on_contract(api, player, contract)        # a Collector order was filled
+def on_service(api, player, client, success)  # a service-window cleaning job ended
 def on_kill(api, victim, killer)
 def on_zombie_kill(api, zombie, killer)
 def on_tick(api, dt, phase)

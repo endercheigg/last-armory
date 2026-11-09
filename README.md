@@ -6,12 +6,13 @@ A first-person, multiplayer gunsmith game set in a zombie-apocalypse outpost. Th
 
 ### Your gun shop (the town is a safe zone)
 - Every player owns a shop on the same town square.
-- **Supplier terminal:** buy parts, Common to Legendary. **The stock changes every time you walk to the middle of town and come back.**
-- **Workbench:** assemble a gun from a receiver, barrel and magazine, plus an optional stock, grip, scope, muzzle and bayonet. There are no compatibility rules, so any part fits any gun.
+- **Supplier terminal:** 4 different parts in every category (receiver, barrel, magazine, stock, grip, scope, muzzle, bayonet), Common to Legendary, each with a spinning 3D preview and its stats. **The stock changes every time you walk to the middle of town and come back.**
+- **Workbench (hands-on):** put a receiver on the bench, then attach parts one by one: a barrel, a magazine, and optionally a stock, grip, scope, muzzle and bayonet. Each part needs its screws tightened (click each screw 3 times) before the gun is done. Any part fits any gun.
 - **Cleaning bench:** fresh guns come out grimy, and firing dirties them further. Dirty guns jam, shoot wider and sell for less, and customers refuse anything under 30%. Cleaning is a scrub minigame that uses a cleaning kit: click the grime before it spreads, and missed clicks waste the kit.
 - **Shelves:** price your guns yourself. Townspeople have real money now:
   - They buy something **80% of the time**.
   - When a gun matches what they want ("wants LONG RANGE"), they **always** buy it, even above their stated budget.
+- **Service window:** a hatch in your shop's front wall. Some townspeople queue there with dirty guns ("Clean my gun? $125"). Take the job and scrub their gun up to the condition they ask for to get paid on the spot. No kit is needed, but miss-clicks burn scrubs, and if you run out (or keep them waiting too long) they leave without paying.
 - **Bed:** your energy drains through the day. Tired means slower movement and shaky aim, so **sleep** in your shop's bed.
 - **Upgrade board:** display racks, decor, sign, pro workbench, and an armor locker (free shields every morning).
 - **Rivals:** walk into another player's shop and buy their guns off the shelf.
@@ -80,6 +81,7 @@ python3 LastArmory.py
 | airdropMinutes | 3 | average minutes between supply drops (0 = off) |
 | bloodMoonEvery | 3 | every Nth night is a Blood Moon, plus the last night (0 = off) |
 | contracts | 2 | Collector special orders posted each morning |
+| supplierPerSlot | 4 | different parts the supplier offers per category |
 | days | 5 | |
 | dayMinutes / nightMinutes | 6 / 3 | |
 | outside | "" | wasteland arena id |

@@ -777,6 +777,11 @@ class TownView(FPSView):
         self.set_palettes({k: t[k] for k in ("skyColor", "fogColor", "ambient", "lightColor", "fogDensity") if k in t},
                           t.get("night", {"skyColor": "#0c1120", "fogColor": "#131a29", "ambient": "#3c4560", "lightColor": "#8fa4e0", "fogDensity": 0.016}))
         self.build_stalls(world.get("vendors", []), t)
+        for pl in world["plots"]:
+            if pl.get("service_sign"):
+                sg = text(self.root, "GUN CLEANING", 0.2, hexc("#ffd28a"), font=self.font)
+                sg.setPos(*pl["service_sign"])
+                sg.setH(pl["sign_rot"])
         m.hud.show_combat(True)
         m.hud.hint.setText("E use  -  I inventory  -  H heal  -  G eat  -  1-6 pick gun  -  walk to a town gate to go outside")
 
@@ -941,6 +946,9 @@ class TownView(FPSView):
             return None, False
         if o["kind"] == "bed":
             return ("[E] Wake up" if self.me_state.get("sl") else f"[E] Sleep  (energy {self.me_state.get('en', 100):.0f}%)"), True
+        if o["kind"] == "service":
+            n = len(m.jobs)
+            return f"[E] Service window - {n} client{'s' if n != 1 else ''} waiting" if n else "[E] Service window - nobody waiting", True
         return {"workbench": "[E] Workbench - assemble guns", "terminal": "[E] Supplier terminal - buy parts",
                 "board": "[E] Upgrade board", "clean": "[E] Cleaning bench"}.get(o["kind"], ""), True
 
@@ -966,6 +974,9 @@ class TownView(FPSView):
         if o["kind"] == "clean" and mine:
             m.open_panel(P.CleaningPanel(m))
             return
+        if o["kind"] == "service" and mine:
+            m.open_panel(P.ServicePanel(m))
+            return
         if o["kind"] == "shelf":
             if mine:
                 m.open_panel(P.ShelfPanel(m, o["slot"]))
@@ -990,7 +1001,10 @@ class TownView(FPSView):
                 look = info.get("look", cid)
                 ch = make_customer(self.root, look)
                 pref = m.content.get("customers", {}).get(info.get("pref"), {})
-                label = f"{info.get('name', '?')}:  wants {pref.get('label', 'A GUN')}  (${info.get('budget', '?')})"
+                if info.get("svc"):
+                    label = f"{info.get('name', '?')}:  needs a gun cleaned  (${info.get('budget', '?')})"
+                else:
+                    label = f"{info.get('name', '?')}:  wants {pref.get('label', 'A GUN')}  (${info.get('budget', '?')})"
                 bub = text(ch.root, label, 0.13, H.WHITE, font=self.font)
                 bub.setZ(2.15)
                 bub.setBillboardPointEye()

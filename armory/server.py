@@ -40,6 +40,7 @@ DEFAULT_CONFIG = {
     "airdropMinutes": 3,
     "bloodMoonEvery": 3,
     "contracts": 2,
+    "supplierPerSlot": 4,
     "town": "",
     "outside": "",
     "disabledMods": [],
@@ -319,20 +320,27 @@ class Game:
         return g
 
     def roll_stock(self, p):
+        """The supplier offers PER_SLOT different parts of every category (receiver, barrel, ... bayonet)."""
         eff = self.effects(p)
-        n = 6 + int(eff.get("stock", 0))
+        luck = 1 + 0.6 * eff.get("stock", 0)          # supplier upgrades make rare parts more likely
         disc = min(60, eff.get("discount", 0))
+        per_slot = int(self.config.get("supplierPerSlot", 4))
         parts = [q for q in self.content["parts"].values() if not q["start"] or q["slot"] in ("barrel", "magazine")]
         stock = []
-        for _ in range(n):
-            w = [50, 30, 14, 5, 1.2]
-            w = [wt * (1 + 0.35 * max(0, self.day - 1) * t) for t, wt in enumerate(w)]
-            tier = random.choices(range(5), weights=w)[0]
-            pool = [q for q in parts if q["tier"] == tier] or parts
-            slot_w = {"receiver": 2.2, "barrel": 1.6, "magazine": 1.3}
-            part = random.choices(pool, weights=[slot_w.get(q["slot"], 1) for q in pool])[0]
-            price = int(round(part["price"] * random.uniform(0.85, 1.2) * (1 - disc / 100)))
-            stock.append({"pid": part["id"], "price": max(1, price)})
+        for sl in SLOTS:
+            pool = [q for q in parts if q["slot"] == sl["id"]]
+            picked = []
+            for _ in range(per_slot):
+                left = [q for q in pool if q not in picked] or pool
+                if not left:
+                    break
+                w = [(50, 30, 14, 5, 1.2)[min(4, q["tier"])] * (1 + (0.35 * max(0, self.day - 1) + luck - 1) * q["tier"])
+                     for q in left]
+                picked.append(random.choices(left, weights=w)[0])
+            picked.sort(key=lambda q: (q["tier"], q["name"]))
+            for part in picked:
+                price = int(round(part["price"] * random.uniform(0.85, 1.2) * (1 - disc / 100)))
+                stock.append({"pid": part["id"], "price": max(1, price), "slot": sl["id"]})
         p.stock = stock
         p.inv_dirty = True
 
@@ -643,7 +651,7 @@ class Game:
             return self.fail(p, "You're asleep (press E to wake up)")
         if a == "buy_part":
             i = m.get("i")
-            if not isinstance(i, int) or not (0 <= i < len(p.stock)) or not p.stock[i]:
+            if not isinstance(i, int) or not (0 <= i < len(p.stock)) or not p.stock[i] or p.stock[i].get("sold"):
                 return
             if not self.in_own_shop(p):
                 return self.fail(p, "Use the supply terminal in your shop")
@@ -652,7 +660,7 @@ class Game:
                 return self.fail(p, "Not enough cash")
             p.cash -= off["price"]
             p.parts[off["pid"]] = p.parts.get(off["pid"], 0) + 1
-            p.stock[i] = None
+            p.stock[i] = dict(off, sold=True)
             self.events.append({"t": "cash", "p": p.id, "n": -off["price"], "why": f"Bought {parts[off['pid']]['name']}"})
         elif a == "craft":
             lo = m.get("parts")
@@ -824,9 +832,48 @@ class Game:
                 del p.items["cleaning_kit"]
             p.clean = {"gid": g["id"], "left": 40, "until": time.monotonic() + 60, "last": 0.0}
             self.send(p, {"t": "clean", "gid": g["id"], "left": 40, "cond": g["cond"]})
+        elif a == "job_take":
+            c = self.customers.get(m.get("cid"))
+            win = self.plot_of(p).get("service")
+            if not win or not self.in_own_shop(p) or not self.near(p, win, 3.0):
+                return self.fail(p, "Stand at your service window")
+            q = self.service_queue(p.id)
+            if not c or c not in q or c["state"] != "wait":
+                return self.fail(p, "That client is gone")
+            if q[0] is not c:
+                return self.fail(p, "Serve the client at the front first")
+            if p.clean:
+                return self.fail(p, "Finish the job you're on first")
+            c["state"] = "served"
+            g = c["job"]["gun"]
+            p.clean = {"job": c["id"], "gid": 0, "left": 30, "until": time.monotonic() + 60, "last": 0.0}
+            self.send(p, {"t": "clean", "job": c["id"], "gid": 0, "left": 30, "cond": g["cond"], "target": c["job"]["target"]})
+            self.send_jobs(p)
+            return
         elif a in ("scrub", "miss"):
             c = p.clean
             now = time.monotonic()
+            if c and c.get("job"):
+                cust = self.customers.get(c["job"])
+                if not cust or now > c["until"]:
+                    return self.end_job(p, False)
+                g = cust["job"]["gun"]
+                if a == "scrub":
+                    if now - c["last"] < 0.08:
+                        return
+                    c["last"] = now
+                    c["left"] -= 1
+                    g["cond"] = round(min(1.0, g["cond"] + 0.03), 3)
+                else:
+                    c["left"] -= 3
+                done = g["cond"] >= cust["job"]["target"] - 1e-6
+                self.send(p, {"t": "clean", "job": cust["id"], "gid": 0, "left": 0 if done else max(0, c["left"]),
+                              "cond": g["cond"], "target": cust["job"]["target"]})
+                if done:
+                    self.end_job(p, True)
+                elif c["left"] <= 0:
+                    self.end_job(p, False)
+                return
             if not c or now > c["until"]:
                 p.clean = None
                 return
@@ -848,6 +895,8 @@ class Game:
             if g["id"] == p.held:
                 self.dirty = True
         elif a == "clean_stop":
+            if p.clean and p.clean.get("job"):
+                return self.end_job(p, False)
             p.clean = None
         else:
             return
@@ -907,6 +956,10 @@ class Game:
             listed = sum(1 for s in p.shelf[:self.shelf_slots(p)] if s)
             weights.append((0.3 + listed) * (1 + 0.5 * eff.get("attract", 0)) * (1 + 0.7 * eff.get("signs", 0)))
         shop = random.choices(shops, weights=weights)[0]
+        plot = self.world["plots"][shop.plot]
+        waiting = [c for c in self.customers.values() if c.get("kind") == "service" and c["owner"] == shop.id]
+        if plot.get("service_queue") and len(waiting) < len(plot["service_queue"]) and random.random() < 0.3:
+            return self.spawn_service_customer(shop, plot)
         prefs = list(self.content["customers"].values())
         pref = random.choices(prefs, weights=[x.get("weight", 10) for x in prefs])[0] if prefs else None
         budget = random.uniform(250, 700) * (1 + 0.25 * (self.day - 1))
@@ -923,6 +976,64 @@ class Game:
         self.hook("on_customer", c)
         self.customers[c["id"]] = c
         self.events.append({"t": "cust", "id": c["id"], "name": c["name"], "pref": c["pref"], "budget": c["budget"], "look": c["look"]})
+
+    # ------------------------------------------------------------ service window: clean clients' guns for money
+    def spawn_service_customer(self, shop, plot):
+        parts = self.content["parts"]
+        cap = min(4, 1 + self.day // 2)
+        by_slot = {}
+        for q in parts.values():
+            if q["tier"] <= cap:
+                by_slot.setdefault(q["slot"], []).append(q["id"])
+        lo = {sl["id"]: random.choice(by_slot[sl["id"]]) for sl in SLOTS
+              if by_slot.get(sl["id"]) and (sl["required"] or random.random() < 0.4)}
+        cond = round(random.uniform(0.12, 0.45), 2)
+        target = round(min(0.95, cond + random.uniform(0.3, 0.45)) * 20) / 20     # nearest 5%
+        g = self.make_gun(lo, None, cond=cond)
+        pay = int(round((45 + g["value"] * 0.12 + 160 * (target - cond)) * (1 + 0.15 * (self.day - 1)) / 5.0) * 5)
+        gate = random.choice(self.world["gates"])
+        c = {"id": self.next_cust, "name": random.choice(CUSTOMER_NAMES), "plot": shop.plot, "owner": shop.id,
+             "x": float(gate[0]), "y": float(gate[1]), "h": 0.0, "pref": None, "budget": pay, "state": "walk", "t": 0.0,
+             "wp": [plot["outside"][:2], plot["service_queue"][-1][:2]], "speed": random.uniform(3.0, 3.8),
+             "look": random.randrange(8), "kind": "service",
+             "job": {"gun": g, "target": target, "pay": pay}, "arrived": 0.0}
+        self.next_cust += 1
+        self.customers[c["id"]] = c
+        self.events.append({"t": "cust", "id": c["id"], "name": c["name"], "pref": None, "budget": pay, "look": c["look"],
+                            "svc": 1})
+
+    def service_queue(self, owner_id):
+        q = [c for c in self.customers.values() if c.get("kind") == "service" and c["owner"] == owner_id
+             and c["state"] in ("wait", "served")]
+        return sorted(q, key=lambda c: (c["state"] != "served", c["arrived"]))
+
+    def send_jobs(self, owner):
+        if not owner:
+            return
+        jobs = []
+        for i, c in enumerate(self.service_queue(owner.id)):
+            j = c["job"]
+            jobs.append({"cid": c["id"], "name": c["name"], "gun": {"name": j["gun"]["name"], "parts": j["gun"]["parts"],
+                                                                    "cond": j["gun"]["cond"]},
+                         "target": j["target"], "pay": j["pay"], "front": i == 0, "served": c["state"] == "served",
+                         "patience": round(max(0.0, c["t"]), 1)})
+        self.send(owner, {"t": "jobs", "list": jobs})
+
+    def end_job(self, p, success):
+        c = self.customers.get(p.clean.get("job")) if p.clean else None
+        p.clean = None
+        if not c:
+            return
+        self.send(p, {"t": "clean", "job": c["id"], "gid": 0, "left": 0, "cond": c["job"]["gun"]["cond"],
+                      "target": c["job"]["target"]})
+        if success:
+            pay = c["job"]["pay"]
+            self.give_cash(p, pay, f"Cleaned {c['name']}'s gun")
+            self.customer_leave(c, "Good as new! Thanks!", True)
+            self.hook("on_service", p, c, True)
+        else:
+            self.customer_leave(c, "You made it worse!")
+            self.hook("on_service", p, c, False)
 
     def customer_decide(self, c):
         """Customers buy something 80% of the time. A gun that matches what they want always sells,
@@ -972,6 +1083,18 @@ class Game:
 
     def customer_leave(self, c, text, happy=False):
         plot = self.world["plots"][c["plot"]]
+        if c.get("kind") == "service":
+            owner = self.players.get(c["owner"])
+            if owner and owner.clean and owner.clean.get("job") == c["id"]:
+                owner.clean = None
+                self.send(owner, {"t": "clean", "job": c["id"], "gid": 0, "left": 0, "cond": c["job"]["gun"]["cond"]})
+            was_waiting = c["state"] in ("wait", "served")
+            c["state"] = "leave"
+            c["wp"] = [plot["outside"][:2], list(min(self.world["gates"], key=lambda g: math.hypot(g[0] - c["x"], g[1] - c["y"])))]
+            self.events.append({"t": "cb", "id": c["id"], "text": text, "happy": 1 if happy else 0})
+            if was_waiting:
+                self.send_jobs(owner)
+            return
         gate = min(self.world["gates"], key=lambda g: math.hypot(g[0] - c["x"], g[1] - c["y"]))
         c["state"] = "leave"
         c["wp"] = [plot["door"][:2], plot["outside"][:2], list(gate)]
@@ -983,13 +1106,28 @@ class Game:
         if not self.is_night and self.cust_t <= 0 and len(self.customers) < cap:
             self.spawn_customer()
             self.cust_t = max(1.5, 7.0 - 0.5 * self.day) * random.uniform(0.6, 1.4) / max(1, len(self.players)) ** 0.5
+        self.jobs_t = getattr(self, "jobs_t", 0.0) - DT
+        if self.jobs_t <= 0:          # keep the owners' patience timers fresh
+            self.jobs_t = 2.0
+            for owner_id in {c["owner"] for c in self.customers.values() if c.get("kind") == "service" and c["state"] == "wait"}:
+                self.send_jobs(self.players.get(owner_id))
         for c in list(self.customers.values()):
+            if c.get("kind") == "service" and c["state"] in ("wait", "served"):
+                self.service_tick(c)
+                continue
             if c["state"] == "browse":
                 c["t"] -= DT
                 if c["t"] <= 0:
                     self.customer_decide(c)
                 continue
             if not c["wp"]:
+                if c["state"] == "walk" and c.get("kind") == "service":
+                    c["state"] = "wait"
+                    c["t"] = 75.0
+                    c["arrived"] = time.monotonic()
+                    self.events.append({"t": "cb", "id": c["id"], "text": f"Clean my gun? ${c['job']['pay']}", "happy": 1})
+                    self.send_jobs(self.players.get(c["owner"]))
+                    continue
                 if c["state"] == "walk":
                     c["state"] = "browse"
                     c["t"] = random.uniform(2.0, 3.5)
@@ -1007,6 +1145,30 @@ class Game:
                 c["x"] += dx / d * step
                 c["y"] += dy / d * step
                 c["h"] = math.degrees(math.atan2(-dx, dy))
+
+    def service_tick(self, c):
+        """Clients queue at the service window; the front one walks up to it. They give up after a while."""
+        owner = self.players.get(c["owner"])
+        if not owner:
+            return self.customer_leave(c, "...")
+        plot = self.world["plots"][c["plot"]]
+        q = self.service_queue(c["owner"])
+        idx = min(q.index(c), len(plot["service_queue"]) - 1)
+        tx, ty = plot["service_queue"][idx][:2]
+        dx, dy = tx - c["x"], ty - c["y"]
+        d = math.hypot(dx, dy)
+        if d > 0.05:
+            step = min(d, c["speed"] * 0.6 * DT)
+            c["x"] += dx / d * step
+            c["y"] += dy / d * step
+            c["h"] = math.degrees(math.atan2(-dx, dy))
+        else:
+            facing = (plot["rot"]) % 360          # face the shop
+            c["h"] = facing
+        if c["state"] == "wait":
+            c["t"] -= DT
+            if c["t"] <= 0:
+                self.customer_leave(c, "Forget it, too slow!")
 
     # ------------------------------------------------------------ combat
     def boxes_for(self, zone):

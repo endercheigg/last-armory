@@ -47,6 +47,7 @@ class Match:
         self.out_count = 0
         self.blood = False
         self.contracts = []
+        self.jobs = []
         self.me_state = {}
         app.accept("escape", self.on_escape)
         app.accept("i", self.open_inventory)
@@ -291,7 +292,13 @@ class Match:
             if m["seller"] == self.me:
                 self.hud.show_toast(f"{m['buyer']} bought your {m['gun']} for ${m['price']}!", bad=False, dur=3)
         elif t == "crafted" and m["p"] == self.me:
+            if self.panel and type(self.panel).__name__ == "WorkbenchPanel":
+                self.panel.reset()
             self.hud.show_toast(f"Assembled: {m['gun']['name']}  (worth ${m['gun']['value']})", bad=False)
+        elif t == "jobs":
+            self.jobs = m["list"]
+            if self.panel and type(self.panel).__name__ == "ServicePanel" and not self.panel.active:
+                self.panel.refresh()
         elif t == "contracts":
             self.contracts = m["list"]
             if self.panel and type(self.panel).__name__ == "ContractPanel":

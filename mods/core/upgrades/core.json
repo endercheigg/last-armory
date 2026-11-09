@@ -71,7 +71,7 @@
  {
   "id": "workbench",
   "name": "Pro Workbench",
-  "description": "Lv1: disassemble guns + bigger supplier stock. Lv2: 15% supplier discount.",
+  "description": "Lv1: disassemble guns + rarer parts at the supplier. Lv2: 15% supplier discount, even rarer parts.",
   "levels": [
    {
     "cost": 250,

@@ -3,7 +3,7 @@ import math
 
 from direct.gui.DirectGui import DGG, DirectButton, DirectEntry, DirectFrame
 from direct.gui.OnscreenText import OnscreenText
-from panda3d.core import Camera, NodePath, PerspectiveLens, TextNode
+from panda3d.core import Camera, NodePath, PerspectiveLens, TextNode, Vec3
 
 from ..gun import RARITY, RARITY_COLORS, SLOTS, compute_stats, gun_value
 from . import hud as H
@@ -107,44 +107,325 @@ class Panel:
         self.root.destroy()
 
 
+# ---------------------------------------------------------------------------- 3D views inside panels
+class View3D:
+    """A little 3D scene rendered into a texture and shown as an image in a panel (so buttons can sit on top)."""
+
+    def __init__(self, app, rect, px=640, fov=30, bg=(0.12, 0.11, 0.1, 1), dist=4.2):
+        from . import geom as G
+        from .world import make_lights
+        x0, x1, y0, y1 = rect
+        self.app, self.rect = app, rect
+        self.scene = NodePath("view3d")
+        G.shader_auto(self.scene)
+        make_lights(self.scene, "#fff2e0", "#7a8090", shadows=False)
+        self.holder = self.scene.attachNewNode("holder")
+        self.inner = self.holder.attachNewNode("inner")
+        h_px = max(64, int(px * (y1 - y0) / (x1 - x0)))
+        self.buf = app.win.makeTextureBuffer("view3d", px, h_px)
+        self.buf.setClearColor(bg)
+        self.buf.setSort(-10)
+        self.lens = PerspectiveLens()
+        self.lens.setFov(fov, fov * (y1 - y0) / (x1 - x0))
+        self.cam = app.makeCamera(self.buf, lens=self.lens)
+        self.cam.reparentTo(self.scene)
+        self.cam.setPos(0, -dist, 0)
+        self.cam.lookAt(0, 0, 0)
+        self.frame = None
+
+    def show_in(self, parent):
+        x0, x1, y0, y1 = self.rect
+        self.frame = DirectFrame(parent=parent, frameColor=(1, 1, 1, 1), frameSize=(x0, x1, y0, y1),
+                                 image=self.buf.getTexture(), image_scale=((x1 - x0) / 2, 1, (y1 - y0) / 2),
+                                 image_pos=((x0 + x1) / 2, 0, (y0 + y1) / 2))
+        return self.frame
+
+    def clear(self):
+        self.inner.getChildren().detach()
+
+    def fit(self, node, size_target=1.6):
+        c, size = bounds_center(node)
+        self.inner.setPos(-c[0], -c[1], -c[2])
+        self.holder.setScale(size_target / size)
+
+    def to_panel(self, node, pt):
+        """Panel (aspect2d) position of a 3D point given in node's space, or None if it is off screen."""
+        from panda3d.core import Point2, Point3
+        p = self.cam.getRelativePoint(node, Point3(*pt))
+        film = Point2()
+        if not self.lens.project(p, film):
+            return None
+        x0, x1, y0, y1 = self.rect
+        return x0 + (film.x + 1) / 2 * (x1 - x0), y0 + (film.y + 1) / 2 * (y1 - y0)
+
+    def destroy(self):
+        if self.frame:
+            self.frame.destroy()
+        self.app.graphicsEngine.removeWindow(self.buf)
+        self.scene.removeNode()
+
+
+def part_node(parent, part, parts):
+    """3D model of a single part (receivers use the real gun model when installed)."""
+    if part["slot"] == "receiver":
+        g, _ = build_gun(parent, {"receiver": part["id"]}, parts)
+        return g
+    from .geom import build_part
+    return build_part(parent, part)
+
+
+def part_lines(p):
+    return [x for x in part_summary(p).split("   ") if x]
+
+
+SLOT_SHORT = {"receiver": "Receiver", "barrel": "Barrel", "magazine": "Mag", "stock": "Stock", "grip": "Grip",
+              "sight": "Scope", "muzzle": "Muzzle", "bayonet": "Bayonet"}
+
+
 # ---------------------------------------------------------------------------- supplier
 class SupplierPanel(Panel):
-    title = "SUPPLIER  -  today's stock"
+    title = "SUPPLIER"
+    CARD_X = (-0.9, -0.3, 0.3, 0.9)
+    IMG_Y = (0.06, 0.5)
+
+    def __init__(self, m):
+        self.tab = "receiver"
+        self.views = []
+        self.shown = [None] * 4
+        self.t = 0.0
+        super().__init__(m)
+        for cx in self.CARD_X:
+            v = View3D(self.app, (cx - 0.28, cx + 0.28, self.IMG_Y[0], self.IMG_Y[1]), px=360, bg=(0.14, 0.15, 0.18, 1))
+            v.show_in(self.root)
+            v.frame.hide()
+            self.views.append(v)
+        self.refresh()
+
+    def set_tab(self, slot):
+        self.tab = slot
+        self.refresh()
+
+    def offers(self):
+        return [(i, off) for i, off in enumerate(self.m.inv.get("stock", [])) if off and off.get("slot") == self.tab]
 
     def build(self):
-        inv = self.m.inv
         parts = self.m.parts
-        stock = inv.get("stock", [])
-        for i, off in enumerate(stock[:12]):
-            col, row = i % 2, i // 2
-            x = -1.19 + col * 1.2
-            y = 0.6 - row * 0.21
-            if not off:
-                self.text("- sold -", (x + 0.5, y - 0.05), 0.04, H.MUTED, TextNode.ACenter)
+        x = -1.08
+        for s in SLOTS:
+            n = sum(1 for off in self.m.inv.get("stock", []) if off and off.get("slot") == s["id"] and not off.get("sold"))
+            self.button(f"{SLOT_SHORT[s['id']]} ({n})", (x, 0.62), lambda sid=s["id"]: self.set_tab(sid), 0.27, 0.075,
+                        hot=self.tab == s["id"], scale=0.034)
+            x += 0.31
+        offers = self.offers()
+        for k, cx in enumerate(self.CARD_X):
+            v = self.views[k] if k < len(self.views) else None
+            if k >= len(offers):
+                if v:
+                    v.frame.hide()
+                    v.clear()
+                    self.shown[k] = None
                 continue
+            i, off = offers[k]
             p = parts.get(off["pid"])
             if not p:
                 continue
             rc = hexc(RARITY_COLORS[p["tier"]])
-            bar = DirectFrame(parent=self.root, frameColor=rc, frameSize=(x, x + 0.012, y - 0.15, y + 0.04))
+            bar = DirectFrame(parent=self.root, frameColor=rc, frameSize=(cx - 0.28, cx + 0.28, 0.5, 0.515))
             self.items.append(bar)
-            self.text(p["name"], (x + 0.04, y - 0.01), 0.048, rc)
-            slot = next((s["name"] for s in SLOTS if s["id"] == p["slot"]), p["slot"])
-            self.text(f"{RARITY[p['tier']]} {slot}", (x + 0.04, y - 0.065), 0.034, H.MUTED)
-            self.text(part_summary(p), (x + 0.04, y - 0.115), 0.03, H.WHITE)
-            can = self.m.cash() >= off["price"]
-            self.button(f"${off['price']}", (x + 0.98, y - 0.045), lambda i=i: self.m.act({"a": "buy_part", "i": i}),
-                        0.22, 0.08, hot=True, enabled=can)
-        owned = sorted(inv.get("parts", {}).items(), key=lambda kv: (parts.get(kv[0], {}).get("slot", ""), kv[0]))
-        line = ",  ".join(f"{parts[k]['name']} x{n}" for k, n in owned if k in parts)
-        self.text("Your parts:  " + (line or "none"), (-1.19, -0.72), 0.034, H.MUTED, wrap=68)
+            if v:
+                v.frame.show()
+                if self.shown[k] != off["pid"]:
+                    v.clear()
+                    node = part_node(v.inner, p, parts)
+                    v.fit(node, 1.25 if p["slot"] == "receiver" else 1.0)
+                    self.shown[k] = off["pid"]
+            self.text(p["name"], (cx, 0.0), 0.042, rc, TextNode.ACenter)
+            self.text(f"{RARITY[p['tier']]} {SLOT_SHORT[p['slot']].lower()}", (cx, -0.05), 0.03, H.MUTED, TextNode.ACenter)
+            for j, line in enumerate(part_lines(p)[:4]):
+                self.text(line, (cx, -0.11 - j * 0.045), 0.03, H.WHITE, TextNode.ACenter)
+            self.text(p.get("description", ""), (cx, -0.32), 0.027, H.MUTED, TextNode.ACenter, wrap=18)
+            if off.get("sold"):
+                self.text("SOLD", (cx, -0.47), 0.05, H.MUTED, TextNode.ACenter)
+            else:
+                have = self.m.inv.get("parts", {}).get(off["pid"], 0)
+                self.button(f"Buy  ${off['price']}", (cx, -0.47), lambda i=i: self.m.act({"a": "buy_part", "i": i}),
+                            0.4, 0.085, hot=True, enabled=self.m.cash() >= off["price"])
+                if have:
+                    self.text(f"you have {have}", (cx, -0.56), 0.028, H.MUTED, TextNode.ACenter)
+        if not offers:
+            self.text("Nothing in this category today.", (0, 0.2), 0.045, H.MUTED, TextNode.ACenter)
+        self.text("New stock arrives every time you visit the town plaza and come back.", (0, -0.66), 0.032, H.MUTED,
+                  TextNode.ACenter)
+        owned = sum(self.m.inv.get("parts", {}).values())
+        self.text(f"Parts in your workshop: {owned}", (0, -0.73), 0.032, H.MUTED, TextNode.ACenter)
+
+    def update(self, dt):
+        self.t += dt
+        for v in self.views:
+            v.holder.setHpr(90 + self.t * 40, 8, 0)
+
+    def destroy(self):
+        for v in self.views:
+            v.destroy()
+        super().destroy()
 
 
-# ---------------------------------------------------------------------------- workbench
+# ---------------------------------------------------------------------------- workbench: hands-on assembly
+SCREWS = {"receiver": 0, "barrel": 2, "magazine": 1, "stock": 2, "grip": 2, "sight": 2, "muzzle": 1, "bayonet": 1}
+TURNS = 3
+
+
 class WorkbenchPanel(Panel):
-    title = "WORKBENCH  -  any part fits any gun"
+    """Put a receiver on the bench, attach parts one by one, then tighten every screw before the gun is done."""
+    title = "WORKBENCH  -  assemble by hand"
     refresh_on_players = False
+    VIEW = (-0.42, 1.2, -0.14, 0.68)
 
+    def __init__(self, m):
+        self.placed = {}
+        self.turns = {}           # slot -> [turns per screw]
+        self.nodes = {}           # slot -> part NodePath
+        self.fly = {}             # slot -> seconds since attached (fly-in animation)
+        self.screw_btns = []
+        self.name = ""
+        self.t = 0.0
+        self.target_pos, self.target_scale = None, None
+        self.view = View3D(m.app, self.VIEW, px=900, bg=(0.16, 0.14, 0.12, 1))
+        super().__init__(m)
+        self.view.show_in(self.root)
+        self.refresh()
+
+    # ---- helpers
+    def owned_ids(self, slot):
+        parts = self.m.parts
+        out = [pid for pid, n in self.m.inv.get("parts", {}).items() if n > 0 and parts.get(pid, {}).get("slot") == slot]
+        out.sort(key=lambda q: (parts[q]["tier"], parts[q]["name"]))
+        return out
+
+    def fastened(self, slot):
+        return all(t >= TURNS for t in self.turns.get(slot, []))
+
+    def ready(self):
+        return all(self.placed.get(s["id"]) for s in SLOTS if s["required"]) and all(self.fastened(s) for s in self.placed)
+
+    def reset(self):
+        self.placed.clear()
+        self.turns.clear()
+        self.fly.clear()
+        self.relayout()
+        self.refresh()
+
+    # ---- actions
+    def pick(self, slot, pid):
+        if slot != "receiver" and not self.placed.get("receiver"):
+            self.m.hud.show_toast("Put a receiver on the bench first", True)
+            self.app.sounds.play("gate_bad", 0.4)
+            return
+        if self.placed.get(slot) == pid:          # click the part again to take it off
+            self.placed.pop(slot)
+            self.turns.pop(slot, None)
+            if slot == "receiver":
+                self.placed.clear()
+                self.turns.clear()
+            self.app.sounds.play("tick", 0.5)
+        else:
+            self.placed[slot] = pid
+            self.turns[slot] = [0] * SCREWS.get(slot, 1)
+            self.fly[slot] = 0.0
+            self.app.sounds.play("craft", 0.45)
+        self.relayout()
+        self.refresh()
+
+    def turn(self, slot, k):
+        tl = self.turns.get(slot)
+        if not tl or tl[k] >= TURNS or self.fly.get(slot, 1) < 0.35:
+            return
+        tl[k] += 1
+        self.app.sounds.play("tick", 0.7)
+        if self.fastened(slot):
+            self.app.sounds.play("gate_good", 0.5)
+            self.refresh()
+        self.place_screws()
+
+    def finish(self):
+        if not self.ready():
+            return
+        self.name = self.entry.get().strip()
+        self.m.act({"a": "craft", "parts": dict(self.placed), "name": self.name})
+        self.app.sounds.play("craft", 0.8)
+
+    # ---- 3D
+    def relayout(self):
+        from .geom import add_shape, gun_layout
+        parts = self.m.parts
+        for n in self.nodes.values():
+            n.removeNode()
+        self.nodes = {}
+        res = gun_layout(self.placed, parts) if self.placed.get("receiver") else None
+        if not res:
+            self.target_pos = None
+            return
+        lay, _ = res
+        for p, off in lay:
+            n = self.view.inner.attachNewNode("part_" + p["slot"])
+            for sh in p.get("model", []):
+                add_shape(n, sh)
+            n.setPos(*off)
+            n.setPythonTag("home", off)
+            self.nodes[p["slot"]] = n
+        a, b = self.view.inner.getTightBounds(self.view.inner)
+        size = max(b[0] - a[0], b[1] - a[1], b[2] - a[2], 1e-3)
+        self.target_pos = (-(a[0] + b[0]) / 2, -(a[1] + b[1]) / 2, -(a[2] + b[2]) / 2)
+        self.target_scale = 1.55 / max(0.35, size)
+        if self.view.holder.getScale()[0] == 1.0:
+            self.view.inner.setPos(*self.target_pos)
+            self.view.holder.setScale(self.target_scale)
+
+    def screw_points(self, slot):
+        n = self.nodes.get(slot)
+        if n is None:
+            return []
+        a, b = n.getTightBounds(n) or ((0, 0, 0), (0, 0, 0))
+        k = len(self.turns.get(slot, []))
+        pts = []
+        for i in range(k):
+            f = (i + 1) / (k + 1)
+            y = a[1] + (b[1] - a[1]) * f
+            z = (a[2] + b[2]) / 2
+            pts.append((a[0], y, z))       # the side facing the camera
+        return pts
+
+    def place_screws(self):
+        for btn in self.screw_btns:
+            btn.destroy()
+        self.screw_btns = []
+        for slot, tl in self.turns.items():
+            pts = self.screw_points(slot)
+            for k, pt in enumerate(pts):
+                if k >= len(tl):
+                    break
+                done = tl[k] >= TURNS
+                col = [(0.9, 0.25, 0.2, 0.95), (1.0, 0.55, 0.15, 0.95), (1.0, 0.85, 0.2, 0.95), (0.35, 0.85, 0.4, 0.9)][min(3, tl[k])]
+                b = DirectButton(parent=self.root, text="+", text_scale=0.05, text_fg=(0.1, 0.08, 0.05, 1), relief=DGG.FLAT,
+                                 frameColor=col, frameSize=(-0.028, 0.028, -0.028, 0.028), pressEffect=0, text_pos=(0, -0.016),
+                                 command=(lambda s=slot, i=k: self.turn(s, i)) if not done else None)
+                b.setR(tl[k] * 30)
+                b.setPythonTag("at", (slot, pt))
+                self.screw_btns.append(b)
+        self.update_screws()
+
+    def update_screws(self):
+        for b in self.screw_btns:
+            slot, pt = b.getPythonTag("at")
+            n = self.nodes.get(slot)
+            pos = self.view.to_panel(n, pt) if n is not None else None
+            if pos is None or self.fly.get(slot, 1) < 0.35:
+                b.hide()
+            else:
+                b.show()
+                b.setPos(pos[0], 0, pos[1])
+
+    # ---- UI
     def refresh(self):
         e = getattr(self, "entry", None)
         if e is not None:
@@ -152,161 +433,115 @@ class WorkbenchPanel(Panel):
                 self.name = e.get()
             except Exception:
                 pass
-        super().refresh()
-
-    def __init__(self, m):
-        self.sel = {}
-        self.name = ""
-        self.preview_key = None
-        self.scene = NodePath("preview")
-        from . import geom as G
-        G.shader_auto(self.scene)
-        from .world import make_lights
-        make_lights(self.scene, "#fff2e0", "#6a7080", shadows=False)
-        self.holder = self.scene.attachNewNode("holder")
-        self.gun = None
-        lens = PerspectiveLens()
-        lens.setFov(30)
-        cam = Camera("pcam", lens)
-        self.cam = self.scene.attachNewNode(cam)
-        self.cam.setPos(0, -4.2, 0.35)
-        self.cam.lookAt(0, 0, 0)
-        self.lens = lens
-        self.dr = m.app.win.makeDisplayRegion(0, 1, 0, 1)
-        self.dr.setSort(30)
-        self.dr.setClearColorActive(True)
-        self.dr.setClearColor((0.1, 0.11, 0.14, 1))
-        self.dr.setClearDepthActive(True)
-        self.dr.setCamera(self.cam)
-        self.t = 0.0
-        super().__init__(m)
-        self.autofill()
-
-    def owned(self, slot):
-        parts = self.m.parts
-        used = {}
-        for s, pid in self.sel.items():
-            used[pid] = used.get(pid, 0) + 1
-        out = []
-        for pid, n in self.m.inv.get("parts", {}).items():
-            p = parts.get(pid)
-            if p and p["slot"] == slot:
-                out.append(pid)
-        out.sort(key=lambda q: (parts[q]["tier"], parts[q]["name"]))
-        return out
-
-    def autofill(self):
-        parts = self.m.parts
-        for s in SLOTS:
-            opts = self.owned(s["id"])
-            if opts and s["id"] not in self.sel:
-                self.sel[s["id"]] = max(opts, key=lambda q: parts[q]["tier"])
-        self.refresh()
-
-    def cycle(self, slot, d, required):
-        opts = self.owned(slot)
-        if not required:
-            opts = [None] + opts
-        if not opts:
-            return
-        cur = self.sel.get(slot)
-        i = opts.index(cur) if cur in opts else 0
-        nxt = opts[(i + d) % len(opts)]
-        if nxt:
-            self.sel[slot] = nxt
-        else:
-            self.sel.pop(slot, None)
-        self.refresh()
-
-    def valid_selection(self):
         inv = self.m.inv.get("parts", {})
-        need = {}
-        for pid in self.sel.values():
-            need[pid] = need.get(pid, 0) + 1
-        sel = {s: pid for s, pid in self.sel.items() if inv.get(pid, 0) >= need[pid]}
-        return sel
+        used = {}
+        for s, pid in list(self.placed.items()):
+            used[pid] = used.get(pid, 0) + 1
+            if inv.get(pid, 0) < used[pid]:      # part no longer owned (sold, used up)
+                self.placed.pop(s)
+                self.turns.pop(s, None)
+        if not self.placed.get("receiver") and self.placed:
+            self.placed.clear()
+            self.turns.clear()
+        if getattr(self, "view", None) and set(self.placed) != set(self.nodes):
+            self.relayout()
+        super().refresh()
+        if getattr(self, "view", None):
+            self.place_screws()
 
     def build(self):
         parts = self.m.parts
-        sel = self.valid_selection()
-        self.sel = sel
-        y = 0.62
+        if not hasattr(self, "placed"):
+            return
+        y = 0.66
         for s in SLOTS:
-            pid = sel.get(s["id"])
-            p = parts.get(pid)
-            self.text(s["name"].upper() + ("" if s["required"] else "  (optional)"), (-1.19, y + 0.03), 0.03, H.MUTED)
+            sid = s["id"]
+            p = parts.get(self.placed.get(sid, ""))
+            state = ""
             if p:
+                state = "  [fastened]" if self.fastened(sid) else "  [tighten screws]"
+            self.text(s["name"].upper() + ("" if s["required"] else " (opt)") + state, (-1.19, y), 0.028,
+                      H.GOOD if p and self.fastened(sid) else (H.GOLD if p else H.MUTED))
+            opts = self.owned_ids(sid)
+            if not opts:
+                self.text("buy at the supplier" if s["required"] else "-", (-1.19, y - 0.06), 0.028, H.MUTED)
+            for j, pid in enumerate(opts[:3]):
+                q = parts[pid]
                 n = self.m.inv.get("parts", {}).get(pid, 0)
-                self.text(f"{p['name']}  x{n}", (-1.19, y - 0.025), 0.044, hexc(RARITY_COLORS[p["tier"]]))
+                on = self.placed.get(sid) == pid
+                b = self.button(f"{q['name'][:13]}{' x' + str(n) if n > 1 else ''}", (-1.07 + j * 0.25, y - 0.05),
+                                lambda sid=sid, pid=pid: self.pick(sid, pid), 0.24, 0.06, hot=on, scale=0.024)
+                if not on:
+                    b["text_fg"] = hexc(RARITY_COLORS[q["tier"]])
+            y -= 0.135
+        if not self.placed.get("receiver"):
+            self.text("Pick a RECEIVER on the left to put it on the bench.", (0.39, 0.25), 0.04, H.WHITE, TextNode.ACenter, wrap=26)
+        # stats + finish
+        lo = {s: pid for s, pid in self.placed.items()}
+        if self.placed.get("receiver"):
+            st = compute_stats(lo, parts)
+            self.text(gun_summary(st), (0.39, -0.2), 0.03, H.WHITE, TextNode.ACenter)
+            loose = sum(1 for s in self.turns for t in self.turns[s] if t < TURNS)
+            missing = [s["name"].lower() for s in SLOTS if s["required"] and not self.placed.get(s["id"])]
+            if missing:
+                msg, col = "Still needs a " + " and a ".join(missing), H.MUTED
+            elif loose:
+                msg, col = f"Tighten {loose} more screw{'s' if loose != 1 else ''}: click each one {TURNS} times", H.GOLD
             else:
-                have = bool(self.owned(s["id"]))
-                self.text("- none -" if have or not s["required"] else "buy one at the supplier", (-1.19, y - 0.025), 0.04,
-                          H.MUTED if not s["required"] else H.BAD)
-            self.button("<", (-0.3, y - 0.01), lambda s=s: self.cycle(s["id"], -1, s["required"]), 0.08, 0.07)
-            self.button(">", (-0.2, y - 0.01), lambda s=s: self.cycle(s["id"], 1, s["required"]), 0.08, 0.07)
-            y -= 0.112
-        ok = all(sel.get(s["id"]) for s in SLOTS if s["required"])
-        self.text("Gun name", (-1.19, -0.33), 0.032, H.MUTED)
-        self.entry = DirectEntry(parent=self.root, initialText=self.name, pos=(-1.19, 0, -0.41), scale=0.042, width=12,
+                msg, col = f"Ready!  Parts worth ${gun_value(lo, parts)} - try selling for ${int(gun_value(lo, parts) * 1.3)}", H.GOOD
+            self.text(msg, (0.39, -0.27), 0.032, col, TextNode.ACenter)
+        self.text("Name", (-0.4, -0.38), 0.03, H.MUTED)
+        self.entry = DirectEntry(parent=self.root, initialText=self.name, pos=(-0.3, 0, -0.385), scale=0.038, width=11,
                                  numLines=1, entryFont=self.f, text_fg=H.WHITE, frameColor=(0.12, 0.13, 0.16, 1),
                                  relief=DGG.FLAT, command=lambda t: None)
         self.items.append(self.entry)
-        self.button("ASSEMBLE", (-0.38, -0.395), self.assemble, 0.36, 0.09, hot=True, enabled=ok)
-        if ok:
-            st = compute_stats(sel, parts)
-            val = gun_value(sel, parts)
-            lines = [f"Damage  {st['damage']:.0f}" + (f" x{st['pellets']}" if st["pellets"] > 1 else ""),
-                     f"Fire rate  {st['fireRate']:.1f}/s  {'AUTO' if st['auto'] else 'SEMI'}", f"DPS  {st['dps']:.0f}",
-                     f"Range  {st['range']:.0f} m", f"Spread  {st['spread']:.1f}", f"Magazine  {st['magSize']}",
-                     f"Reload  {st['reloadTime']:.1f} s", f"Melee  {st['melee']:.0f}", f"Zoom  {st['zoom']:.1f}x",
-                     f"Speed  {st['moveSpeed'] * 100:.0f}%"]
-            for i, l in enumerate(lines):
-                self.text(l, (0.08 + (i % 2) * 0.58, 0.02 - (i // 2) * 0.06), 0.038)
-            self.text(f"Parts worth ${val}  -  try selling for ${int(val * 1.3)}", (0.08, -0.31), 0.036, H.GOLD)
-        else:
-            self.text("Pick a receiver, barrel and magazine to assemble a gun.", (0.08, -0.05), 0.036, H.MUTED, wrap=26)
-        # guns owned
+        self.button("FINISH GUN", (0.92, -0.375), self.finish, 0.42, 0.09, hot=True, enabled=self.ready())
+        self.button("Clear bench", (0.47, -0.375), self.reset, 0.3, 0.07, scale=0.032)
         guns = self.m.inv.get("guns", [])
         dis = bool(self.m.inv.get("effects", {}).get("disassemble"))
-        self.text("YOUR GUNS" + ("" if dis else "   (upgrade the workbench to scrap guns back into parts)"), (-1.19, -0.52), 0.032, H.MUTED)
+        self.text("YOUR GUNS" + ("" if dis else "   (upgrade the workbench to scrap guns back into parts)"), (-1.19, -0.5), 0.03, H.MUTED)
         for i, g in enumerate(guns[:6]):
             x = -1.19 + (i % 3) * 0.8
-            yy = -0.6 - (i // 3) * 0.12
+            yy = -0.58 - (i // 3) * 0.11
             held = g["id"] == self.m.inv.get("held")
-            self.text(("* " if held else "") + g["name"][:13] + f" {g.get('cond', 1) * 100:.0f}%", (x, yy), 0.034, H.GOLD if held else H.WHITE)
-            self.button("Hold", (x + 0.5, yy + 0.012), lambda g=g: self.m.act({"a": "hold", "gid": g["id"]}), 0.13, 0.06, scale=0.034)
+            self.text(("* " if held else "") + g["name"][:13] + f" {g.get('cond', 1) * 100:.0f}%", (x, yy), 0.032, H.GOLD if held else H.WHITE)
+            self.button("Hold", (x + 0.5, yy + 0.012), lambda g=g: self.m.act({"a": "hold", "gid": g["id"]}), 0.13, 0.06, scale=0.032)
             if dis:
-                self.button("Scrap", (x + 0.65, yy + 0.012), lambda g=g: self.m.act({"a": "disassemble", "gid": g["id"]}), 0.14, 0.06, scale=0.034)
-        key = tuple(sorted(sel.items()))
-        if key != self.preview_key:
-            self.preview_key = key
-            if self.gun:
-                self.gun.removeNode()
-                self.gun = None
-            if sel.get("receiver"):
-                g, _ = build_gun(self.holder, sel, parts)
-                c, size = bounds_center(g)
-                g.setPos(-c[0], -c[1], -c[2])
-                self.holder.setScale(1.0 / size)
-                self.gun = g
-
-    def assemble(self):
-        self.name = self.entry.get().strip()
-        self.m.act({"a": "craft", "parts": dict(self.sel), "name": self.name})
-        self.app.sounds.play("craft", 0.8)
+                self.button("Scrap", (x + 0.65, yy + 0.012), lambda g=g: self.m.act({"a": "disassemble", "gid": g["id"]}), 0.14, 0.06, scale=0.032)
 
     def update(self, dt):
         self.t += dt
-        self.holder.setH(90 + self.t * 30)
-        a = self.app.getAspectRatio()
-        x0, x1, y0, y1 = 0.05, 1.2, 0.12, 0.72
-        self.dr.setDimensions((x0 + a) / (2 * a), (x1 + a) / (2 * a), (y0 + 1) / 2, (y1 + 1) / 2)
-        ar = ((x1 - x0) / (2 * a)) * self.app.win.getXSize() / max(1, ((y1 - y0) / 2) * self.app.win.getYSize())
-        self.lens.setFov(30 * max(1.0, ar / 1.6), 30 * max(1.0, ar / 1.6) / ar)
+        v = self.view
+        v.holder.setH(90 + math.sin(self.t * 0.5) * 14)
+        v.holder.setP(math.sin(self.t * 0.37) * 5)
+        if self.target_pos is not None:
+            k = min(1.0, dt * 6)
+            cur = v.inner.getPos()
+            v.inner.setPos(cur + (Vec3(*self.target_pos) - cur) * k)
+            s = v.holder.getScale()[0]
+            v.holder.setScale(s + (self.target_scale - s) * k)
+        for slot, t in list(self.fly.items()):
+            t += dt
+            self.fly[slot] = t
+            n = self.nodes.get(slot)
+            if n is not None:
+                hx, hy, hz = n.getPythonTag("home")
+                f = min(1.0, t / 0.35)
+                e = 1 - (1 - f) ** 3
+                n.setPos(hx - 0.25 * (1 - e), hy, hz + 0.3 * (1 - e))
+                n.setR(25 * (1 - e))
+            if t > 0.35:
+                self.fly.pop(slot)
+                if n is not None:
+                    n.setPos(*n.getPythonTag("home"))
+                    n.setR(0)
+                self.update_screws()
+        self.update_screws()
 
     def destroy(self):
-        self.app.win.removeDisplayRegion(self.dr)
-        self.scene.removeNode()
+        for b in self.screw_btns:
+            b.destroy()
+        self.view.destroy()
         super().destroy()
 
 
@@ -613,7 +848,11 @@ class CleaningPanel(Panel):
         self.spots = []
         self.refresh()
 
+    JOB = False
+
     def on_server(self, msg):
+        if bool(msg.get("job")) != self.JOB:
+            return
         self.gid = msg["gid"]
         self.cond = msg["cond"]
         was = self.active
@@ -699,3 +938,64 @@ class CleaningPanel(Panel):
         self.app.graphicsEngine.removeWindow(self.buf)
         self.scene.removeNode()
         super().destroy()
+
+
+class ServicePanel(CleaningPanel):
+    """Service window: clients queue outside with dirty guns. Clean one up to their target condition and get paid.
+    No cleaning kit needed (they pay for your time), but missed clicks still waste scrubs - run out and they leave unpaid."""
+    title = "SERVICE WINDOW  -  clean clients' guns"
+
+    def __init__(self, m):
+        self.target = 0.0
+        self.shown_job = None
+        self.job_cid = None
+        super().__init__(m)
+
+    def front(self):
+        return next((j for j in self.m.jobs if j.get("front")), None)
+
+    def build(self):
+        jobs = self.m.jobs
+        if not self.active:
+            if not jobs:
+                self.text("No clients waiting.", (-1.19, 0.58), 0.045, H.MUTED)
+                self.text("Some townspeople bring dirty guns to this window.\nClean them up to the condition they ask for\nand they pay you on the spot.",
+                          (-1.19, 0.48), 0.033, H.MUTED)
+            y = 0.58
+            for j in jobs[:3]:
+                g = j["gun"]
+                col = H.WHITE if j["front"] else H.MUTED
+                self.text(f"{j['name']}  -  {g['name']}", (-1.19, y), 0.042, col)
+                self.text(f"{g['cond'] * 100:.0f}%  ->  {j['target'] * 100:.0f}%      pays ${j['pay']}", (-1.19, y - 0.06), 0.036,
+                          H.GOLD if j["front"] else H.MUTED)
+                self.text(f"waits {j['patience']:.0f}s more" if not j.get("served") else "being served", (-1.19, y - 0.11), 0.03, H.MUTED)
+                y -= 0.2
+            fj = self.front()
+            if fj and self.shown_job != fj["cid"]:
+                self.shown_job = fj["cid"]
+                self.show_gun(fj["gun"])
+                self.cond = fj["gun"]["cond"]
+            self.button("Take the job (front client)", (-0.75, -0.5), self.start, 0.8, 0.09, hot=True, enabled=bool(fj))
+            self.text("Click the grime as fast as you can.\nReach their target before you run out of scrubs.\nClicking clean metal wastes 3 scrubs.",
+                      (0.52, -0.6), 0.034, H.MUTED, TextNode.ACenter)
+        else:
+            self.text(f"Scrubs left: {self.left}", (0.1, -0.55), 0.05, H.WHITE)
+            self.text(f"Condition: {self.cond * 100:.0f}%  /  target {self.target * 100:.0f}%", (0.6, -0.55), 0.045,
+                      H.GOOD if self.cond >= self.target else H.WHITE)
+            self.button("Give up", (1.05, -0.68), self.stop, 0.2, 0.07)
+
+    def start(self):
+        fj = self.front()
+        if fj:
+            self.job_cid = fj["cid"]
+            self.m.act({"a": "job_take", "cid": fj["cid"]})
+
+    JOB = True
+
+    def on_server(self, msg):
+        if not msg.get("job"):
+            return
+        self.target = msg.get("target", self.target)
+        super().on_server(msg)
+        if not self.active:
+            self.shown_job = None

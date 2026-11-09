@@ -81,7 +81,12 @@ def build_town(content, town_id=None, shop_id=None):
             x, y = to_world(p, sh[0], sh[1])
             p["shelves"].append([x, y, sh[2] if len(sh) > 2 else 1.2, (sh[3] if len(sh) > 3 else 0) + p["rot"]])
             objects.append({"kind": "shelf", "plot": i, "slot": j, "pos": [x, y, sh[2] if len(sh) > 2 else 1.2]})
-        for kind in ("workbench", "terminal", "board", "bed", "clean"):
+        if "serviceSpot" in shop:
+            sx0, sy0 = shop["serviceSpot"][:2]
+            p["service_queue"] = [point(p, (sx0, sy0)), point(p, (sx0 - 0.2, sy0 - 1.4)), point(p, (sx0 + 0.3, sy0 - 2.7))]
+        if "serviceSign" in shop:
+            p["service_sign"] = point(p, shop["serviceSign"], shop["serviceSign"][2])
+        for kind in ("workbench", "terminal", "board", "bed", "clean", "service"):
             if kind not in shop:
                 continue
             q = point(p, shop[kind], 1.0)
