@@ -4,13 +4,14 @@ import random
 import time
 
 from panda3d.core import (CullFaceAttrib, RenderState, AmbientLight, Camera, DirectionalLight, Fog, KeyboardButton, MouseButton, NodePath,
-                          PerspectiveLens, Point3, PointLight, Spotlight, TextureStage, TransparencyAttrib, Vec3)
+                          PerspectiveLens, Point2, Point3, PointLight, Spotlight, TextureStage, TransparencyAttrib, Vec3)
 
 from ..town import arena_boxes
-from ..sim import EYE_H, aim_vec, box_tuple, move_player, ray_world
+from ..sim import EYE_H, SPRINT_MUL, aim_vec, box_tuple, move_player, ray_world
 from . import hud as H
 from . import assets as A
 from . import materials as MAT
+from .sky import Sky
 from . import geom as G
 from . import panels as P
 from .geom import (PLAYER_COLORS, Character, box, box_min, build_gun, bounds_center, grid_texture, hexc, mix,
@@ -102,8 +103,8 @@ class Effects:
         self.items.append({"np": np, "t": 0, "life": 0.5, "kind": "boom", "r": r})
         self.sparks(p, (1, 0.6, 0.2, 1), 14, 9)
 
-    def float_text(self, parent, s, color, z=2.6, font=None):
-        np = text(parent, s, 0.45, color, font=font)
+    def float_text(self, parent, s, color, z=2.6, font=None, scale=0.45):
+        np = text(parent, s, scale, color, font=font)
         np.setZ(z)
         np.setBillboardPointEye()
         self.items.append({"np": np, "t": 0, "life": 1.4, "kind": "rise"})
@@ -342,6 +343,10 @@ class FPSView:
         self.fog = fog
         self.palettes = {}
         self.night_on = None
+        self.env_key = None
+        self.sky = Sky(app)
+        self.sprint = 0.0
+        self.step_t = 0.0
         torch = Spotlight("torch")
         torch.setColor((1.4, 1.3, 1.1, 1))
         torch.getLens().setFov(44)
@@ -357,25 +362,106 @@ class FPSView:
 
     BLOOD = {"skyColor": "#2a0606", "fogColor": "#3a0b0b", "ambient": "#5a2a2a", "lightColor": "#ff6a4a", "fogDensity": 0.02}
 
-    def apply_palette(self, night, blood=False):
-        pal = self.palettes.get("night" if night else "day")
-        self.night_on = night
-        self.blood_on = blood
-        if blood and night:
-            pal = dict(pal or {}, **self.BLOOD)
-        if not pal:
+    def night_amount(self):
+        """0 by day, 1 at night, easing through dusk (end of the day) and dawn (start of the day)."""
+        m = self.m
+        dm, nm = m.server.get("dayMinutes", 6), m.server.get("nightMinutes", 3)
+        dfrac = dm / float(dm + nm)
+        tod = m.tod
+        w = min(0.06, dfrac * 0.25)
+        ease = lambda x: x * x * (3 - 2 * x)
+        if tod < w:
+            return 1 - ease(tod / w), 0.0
+        if tod < dfrac - w:
+            return 0.0, tod / dfrac
+        if tod < dfrac:
+            return ease((tod - (dfrac - w)) / w), tod / dfrac
+        return 1.0, 1.0
+
+    def update_env(self):
+        """Blend sky, fog, sun and ambient light for the time of day; the sun crosses the sky and sets."""
+        m = self.m
+        app = m.app
+        a, u = self.night_amount()
+        key = (round(a, 3), round(u, 3), bool(m.blood))
+        if key == self.env_key:
             return
-        app = self.m.app
-        app.setBackgroundColor(*hexc(pal.get("skyColor", "#a9c3d9")))
-        self.fog.setColor(*hexc(pal.get("fogColor", pal.get("skyColor", "#a9c3d9")))[:3])
-        self.fog.setExpDensity(pal.get("fogDensity", 0.01))
-        self.amb.node().setColor(hexc(pal.get("ambient", "#7a8090")))
-        c = hexc(pal.get("lightColor", "#fff2dc"))
-        self.sun.node().setColor((c[0] * (0.5 if night else 1.1), c[1] * (0.5 if night else 1.1), c[2] * (0.6 if night else 1.1), 1))
-        if night:
-            self.root.setLight(self.torch)
+        self.env_key = key
+        day = self.palettes.get("day") or {}
+        night = dict(self.palettes.get("night") or {})
+        if m.blood:
+            night.update(self.BLOOD)
+
+        def col(pal, k, default):
+            return hexc(pal.get(k, default))[:3]
+
+        def mixc(c0, c1, t):
+            return tuple(c0[i] + (c1[i] - c0[i]) * t for i in range(3))
+        sky = mixc(col(day, "skyColor", "#a9c3d9"), col(night, "skyColor", "#0c1120"), a)
+        fogc = mixc(col(day, "fogColor", day.get("skyColor", "#b9c9d6")), col(night, "fogColor", "#131a29"), a)
+        amb = mixc(col(day, "ambient", "#8a90a0"), col(night, "ambient", "#3c4560"), a)
+        l0, l1 = col(day, "lightColor", "#fff2dc"), col(night, "lightColor", "#8fa4e0")
+        light = mixc(tuple(c * 1.1 for c in l0), (l1[0] * 0.5, l1[1] * 0.5, l1[2] * 0.6), a)
+        dens = day.get("fogDensity", 0.006) * (1 - a) + night.get("fogDensity", 0.016) * a
+        glow = 4 * a * (1 - a)                    # peaks in the middle of sunset / sunrise
+        fogc = mixc(fogc, (0.96, 0.56, 0.32), glow * 0.55)
+        light = mixc(light, (1.0, 0.62, 0.36), glow * 0.5)
+        light = tuple(c * (1 - 0.45 * glow) for c in light)
+        zen = (sky[0] * 0.55, sky[1] * 0.72, sky[2])
+        app.setBackgroundColor(fogc[0], fogc[1], fogc[2], 1)
+        self.fog.setColor(*fogc)
+        self.fog.setExpDensity(dens)
+        self.amb.node().setColor((amb[0], amb[1], amb[2], 1))
+        self.sun.node().setColor((light[0], light[1], light[2], 1))
+        el, az = 14 + 52 * math.sin(math.pi * u), 120 - 150 * u
+        mel, maz = 48.0, -50.0
+
+        def toward(azd, eld):
+            r, e = math.radians(azd), math.radians(eld)
+            return (math.sin(r) * math.cos(e), -math.cos(r) * math.cos(e), math.sin(e))
+        if a < 0.5:
+            self.sun.setHpr(az, -el, 0)
         else:
-            self.root.clearLight(self.torch)
+            self.sun.setHpr(maz, -mel, 0)
+        self.sky.set(zen, fogc, toward(az, el), 1 - a, toward(maz, mel), a, a * (0.3 if m.blood else 1.0),
+                     moon_color=(1.0, 0.3, 0.22) if m.blood else (0.9, 0.92, 1.0))
+        dark = a > 0.5
+        if dark != self.night_on:
+            self.night_on = dark
+            if dark:
+                self.root.setLight(self.torch)
+            else:
+                self.root.clearLight(self.torch)
+
+    # -------------------------------------------------- waypoint markers
+    def marker_list(self):
+        """[(world pos, label, colour)] - subclasses say what is worth pointing at."""
+        return []
+
+    def update_markers(self):
+        m = self.m
+        app = m.app
+        out = []
+        if self.render_pos is not None and self.alive() and m.panel is None:
+            a = app.getAspectRatio()
+            eye = app.camera.getPos(app.render)
+            for pos, label, color in self.marker_list()[:6]:
+                wp = Point3(pos[0], pos[1], pos[2] if len(pos) > 2 else 1.5)
+                dist = (wp - eye).length()
+                if dist < 3.5:
+                    continue
+                p = app.cam.getRelativePoint(app.render, wp)
+                p2 = Point2()
+                if p.y > 0.1 and app.camLens.project(p, p2) and abs(p2.x) < 0.92 and abs(p2.y) < 0.84:
+                    out.append((p2.x * a, p2.y + 0.04, f"{label}  {dist:.0f}m", color))
+                    continue
+                dx, dz = p.x, p.z * (0.25 if p.y <= 0.1 else 1.0)      # behind you: mostly say left or right
+                L = math.hypot(dx, dz) or 1.0
+                ex, ez = dx / L, dz / L
+                k = min((a - 0.42) / max(1e-3, abs(ex)), 0.8 / max(1e-3, abs(ez)))
+                arrow = f"{label}  {dist:.0f}m >" if ex > 0.3 else (f"< {label}  {dist:.0f}m" if ex < -0.3 else f"{label}  {dist:.0f}m")
+                out.append((ex * k, ez * k, arrow, color))
+        m.hud.set_markers(out)
 
     # -------------------------------------------------- interaction (objects with a "pos", described by subclasses)
     def find_object(self):
@@ -449,8 +535,8 @@ class FPSView:
         ack = me["ack"]
         self.pending = [p for p in self.pending if p[0] > ack]
         s = {"x": r[1], "y": r[2], "z": r[3], "vz": me["vz"], "ground": bool(me["gr"])}
-        for _, mf, ms, j, h in self.pending:
-            move_player(s, mf, ms, j, h, me["spd"], SEND_DT, self.boxes, self.size)
+        for _, mf, ms, j, h, sp in self.pending:
+            move_player(s, mf, ms, j, h, me["spd"] * (SPRINT_MUL if sp else 1.0), SEND_DT, self.boxes, self.size)
         if self.pred is None:
             self.render_pos = Vec3(s["x"], s["y"], s["z"])
         self.pred = s
@@ -502,6 +588,8 @@ class FPSView:
         c = self.chars.get(msg["v"])
         if c:
             c.flinch = 0.6
+            if msg.get("a") == self.m.me:
+                self.fx.float_text(c.root, str(msg["n"]), H.BAD if msg.get("hd") else H.WHITE, z=2.3, font=self.font, scale=0.3)
 
     def interp_rows(self, key, idx_alive=None):
         """Interpolate rows of the snapshot list stored under `key` ('p' handled by self.snaps)."""
@@ -549,7 +637,7 @@ class FPSView:
             sens = app.settings["sens"] / (1 + ((st["zoom"] if st else 1.3) - 1) * self.ads)
             self.h -= dx * sens
             self.p = max(-88, min(88, self.p - dy * sens))
-        mf = ms = j = fire = ads_btn = 0
+        mf = ms = j = fire = ads_btn = sp = 0
         if controlling:
             mf = (1 if key_down(app, "w", "arrow_up") else 0) - (1 if key_down(app, "s", "arrow_down") else 0)
             ms = (1 if key_down(app, "d", "arrow_right") else 0) - (1 if key_down(app, "a", "arrow_left") else 0)
@@ -564,7 +652,16 @@ class FPSView:
             if f and not self.f_was_down:
                 self.melees += 1
             self.f_was_down = f
+            # sprint: hold Shift while running forward. Not while shooting or aiming, and only with stamina left.
+            if key_down(app, "shift") and mf > 0 and not fire and not ads_btn and not frozen and self.me_state.get("st", 100) > 4:
+                sp = 1
         self.ads += ((1 if ads_btn else 0) - self.ads) * min(1, dt * 12)
+        self.sprint += (sp - self.sprint) * min(1, dt * 8)
+        if alive and (mf or ms) and self.me_state.get("gr", 1) and controlling:
+            self.step_t -= dt * (1.45 if sp else 1.0)
+            if self.step_t <= 0:
+                self.step_t = 0.4
+                app.sounds.play("step", 0.22 if not sp else 0.3, random.uniform(0.85, 1.15))
 
         self.send_acc = min(0.2, self.send_acc + dt)
         while self.send_acc >= SEND_DT:
@@ -573,11 +670,12 @@ class FPSView:
                    "ads": ads_btn, "r": 1 if (controlling and key_down(app, "r")) else 0}
             if alive and self.pred:
                 self.seq += 1
-                msg.update(seq=self.seq, mf=mf, ms=ms, j=j)
+                msg.update(seq=self.seq, mf=mf, ms=ms, j=j, sp=sp)
                 fm, fs, fj = (0, 0, 0) if frozen else (mf, ms, j)
-                self.pending.append((self.seq, fm, fs, fj, self.h % 360))
+                self.pending.append((self.seq, fm, fs, fj, self.h % 360, sp))
                 self.pending = self.pending[-90:]
-                move_player(self.pred, fm, fs, fj, self.h % 360, self.me_state.get("spd", 7), SEND_DT, self.boxes, self.size)
+                move_player(self.pred, fm, fs, fj, self.h % 360, self.me_state.get("spd", 7) * (SPRINT_MUL if sp else 1.0),
+                            SEND_DT, self.boxes, self.size)
             m.conn.send(msg)
 
         if self.pred:
@@ -627,8 +725,7 @@ class FPSView:
                 if now - t0 > 4:
                     c.root.hide()
         m.alive_count = len(alive_ids)
-        if m.is_night != self.night_on or m.blood != getattr(self, "blood_on", False):
-            self.apply_palette(m.is_night, m.blood)
+        self.update_env()
         self.torch.setPos(app.camera.getPos(app.render))
         self.torch.setHpr(app.camera.getHpr(app.render))
         self.update_world(dt, now)
@@ -636,7 +733,7 @@ class FPSView:
 
         cam = app.camera
         zoom = st["zoom"] if st else 1.3
-        fov = app.settings["fov"] / (1 + (zoom - 1) * self.ads)
+        fov = app.settings["fov"] / (1 + (zoom - 1) * self.ads) + 7 * self.sprint * (1 - self.ads)
         app.camLens.setFov(fov)
         self.vm_lens.setAspectRatio(app.getAspectRatio())
         if alive and self.render_pos is not None:
@@ -656,6 +753,8 @@ class FPSView:
             if self.vm_flash_t <= 0:
                 self.vm_flash.hide()
         self.fx.update(dt)
+        self.sky.update()
+        self.update_markers()
         self.update_hud(st, alive)
 
     def update_world(self, dt, now):
@@ -690,7 +789,7 @@ class FPSView:
             self.vm_flash.setColor(1, 0.85, 0.4, 1)
             self.vm_flash.setLightOff()
             self.vm_flash.hide()
-        self.bob += dt * (9 if moving else 0)
+        self.bob += dt * ((13 if self.sprint > 0.5 else 9) if moving else 0)
         self.kick = max(0, self.kick - dt * 6)
         self.stab = max(0, self.stab - dt * 3.5)
         rel = self.me_state.get("reload", 0)
@@ -699,14 +798,17 @@ class FPSView:
         bx = math.sin(self.bob) * 0.008 * (1 - ads)
         bz = abs(math.cos(self.bob)) * 0.008 * (1 - ads)
         lunge = math.sin(min(1, self.stab) * math.pi) * 0.25
-        self.vm_holder.setPos(0.17 * (1 - ads) + bx - lunge * 0.3, 0.42 - self.kick * 0.05 + lunge, -0.19 + 0.11 * ads - dip * 0.12 + bz)
-        self.vm_holder.setHpr(lunge * 40, self.kick * 5 - dip * 25, -dip * 20)
+        run = self.sprint
+        self.vm_holder.setPos(0.17 * (1 - ads) + bx - lunge * 0.3 - 0.03 * run, 0.42 - self.kick * 0.05 + lunge,
+                              -0.19 + 0.11 * ads - dip * 0.12 + bz - 0.05 * run)
+        self.vm_holder.setHpr(lunge * 40 + 28 * run, self.kick * 5 - dip * 25 - 12 * run, -dip * 20)
 
     def update_hud(self, st, alive):
         m = self.m
         hud = m.hud
         me = self.me_state
         hud.set_vitals(max(0, me.get("hp", 100)), me.get("ar", 0), me.get("hu", 100), me.get("en", 100), bool(me.get("sl")))
+        hud.set_stamina(me.get("st", 100) if alive else 100)
         if st:
             rel = self.me_state.get("reload", 0)
             if rel > 0:
@@ -727,6 +829,9 @@ class FPSView:
 
     def destroy(self):
         self.fx.clear()
+        self.sky.destroy()
+        self.m.hud.set_markers([])
+        self.m.hud.set_stamina(100)
         self.torch.removeNode()
         self.m.hud.prompt.setText("")
         self.m.hud.spec.setText("")
@@ -783,7 +888,20 @@ class TownView(FPSView):
                 sg.setPos(*pl["service_sign"])
                 sg.setH(pl["sign_rot"])
         m.hud.show_combat(True)
-        m.hud.hint.setText("E use  -  I inventory  -  H heal  -  G eat  -  1-6 pick gun  -  walk to a town gate to go outside")
+        m.hud.hint.setText("E use  -  Shift sprint  -  I inventory  -  H heal  -  G eat  -  1-6 pick gun  -  F1 help")
+
+    def marker_list(self):
+        m = self.m
+        out = []
+        g = m.guide.target() if getattr(m, "guide", None) else None
+        if g:
+            out.append((g[0], g[1], H.GOLD))
+        pl = self.world["plots"][m.infos.get(m.me, {}).get("plot", 0)]
+        if self.render_pos is not None:
+            d = math.hypot(self.render_pos.x - pl["door"][0], self.render_pos.y - pl["door"][1])
+            if d > 28 and not g:
+                out.append(((pl["door"][0], pl["door"][1], 2.0), "YOUR SHOP", H.MUTED))
+        return out
 
     def build_stalls(self, vendors, town):
         tv = {v["id"]: v for v in town.get("vendors", [])}
@@ -1062,7 +1180,38 @@ class OutsideView(FPSView):
         self.zsnaps = []
         self.spec_idx = 0
         m.hud.show_combat(True)
-        m.hud.hint.setText("Zombies roam here. PvP is on while 2+ players are outside - kills loot 25% cash.  F = bayonet")
+        m.hud.hint.setText("Shift sprint  -  F bayonet  -  R reload  -  H heal  -  PvP is on while 2+ players are outside  -  F1 help")
+
+    def marker_list(self):
+        out = []
+        for r in (self.last_loot or []):
+            if len(r) > 4 and r[4]:
+                out.append(((r[1], r[2], 1.5), "SUPPLY DROP" if r[5] <= 0 else f"DROP LANDING {r[5]:.0f}s", (1.0, 0.6, 0.25, 1)))
+        for zz in self.zombies.values():
+            if zz.get("boss"):
+                p = zz["char"].root.getPos()
+                if self.render_pos is not None and math.hypot(p.x - self.render_pos.x, p.y - self.render_pos.y) > 14:
+                    out.append(((p.x, p.y, 3.2), "THE BUTCHER", H.BAD))
+        for ex in self.arena.get("exits", []):
+            out.append(((ex[0], ex[1], 2.6), "TOWN", H.GOOD))
+        return out
+
+    def on_damage(self, msg):
+        super().on_damage(msg)
+        if msg["v"] < 0 and msg.get("a") == self.m.me:
+            zz = self.zombies.get(-msg["v"])
+            if zz:
+                root = zz["char"].root
+                self.fx.float_text(root, str(msg["n"]), H.BAD if msg.get("hd") else H.GOLD, z=zz.get("top", 2.25),
+                                   font=self.font, scale=0.3)
+
+    def on_zhit(self, msg):
+        zz = self.zombies.get(msg["id"])
+        if zz:
+            ch = zz["char"]
+            if hasattr(ch, "gesture"):
+                ch.gesture("Zombie_Scratch", 0.55)
+            self.m.app.sounds.play("growl", self.dist_vol(ch.root.getPos()) * 0.7, random.uniform(0.85, 1.2))
 
     def on_loot_gone(self, msg):
         c = self.crates.pop(msg["id"], None)
@@ -1197,12 +1346,35 @@ class OutsideView(FPSView):
             if not zz:
                 zt = types[ti] if ti < len(types) else {}
                 ch = make_zombie(self.root, zt, look=zid if isinstance(zid, int) else sum(map(ord, str(zid))))
-                zz = {"char": ch, "groan": now + random.uniform(1, 6)}
+                zz = {"char": ch, "groan": now + random.uniform(1, 6), "boss": bool(zt.get("boss")), "hp": None}
+                # health bar (shown once hurt; always for the boss)
+                top = 1.5 * zt.get("scale", 1.0)
+                zz["top"] = top + 0.3
+                bar = ch.root.attachNewNode("hpbar")
+                bar.setZ(top + 0.17)
+                bar.setBillboardPointEye()
+                bar.setLightOff()
+                box(bar, (0, 0.01, 0), (0.72, 0.01, 0.075), (0.05, 0.05, 0.05, 1))
+                zz["fill"] = box(bar, (0, 0, 0), (0.68, 0.01, 0.05), (0.85, 0.15, 0.12, 1))
+                bar.hide()
+                zz["bar"] = bar
+                if zz["boss"]:
+                    ch.root.setColorScale(1.25, 0.7, 0.7, 1)
+                    tag = text(ch.root, zt.get("name", "THE BUTCHER").upper(), 0.2, H.BAD, font=self.font)
+                    tag.setZ(top + 0.37)
+                    tag.setBillboardPointEye()
                 self.zombies[zid] = zz
             ch = zz["char"]
             ch.root.setPos(x, y, z)
             ch.root.setH(h)
             ch.animate(dt, spd)
+            if hp != zz["hp"]:
+                zz["hp"] = hp
+                frac = max(0.0, min(1.0, hp / max(1.0, mhp)))
+                zz["fill"].setSx(max(0.001, 0.68 * frac))
+                zz["fill"].setX(-0.34 * (1 - frac))
+                if frac < 0.999 or zz["boss"]:
+                    zz["bar"].show()
             if now > zz["groan"]:
                 zz["groan"] = now + random.uniform(4, 10)
                 app.sounds.play("groan", self.dist_vol(ch.root.getPos()) * 0.6, random.uniform(0.8, 1.2))

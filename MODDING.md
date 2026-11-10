@@ -68,6 +68,7 @@ A customer values a gun at `worth × (0.75 + 0.45 × match)`, where `match = sta
 { "id": "screamer", "name": "Screamer", "hp": 80, "speed": 4, "damage": 15, "reward": 30, "weight": 4, "minDay": 2,
   "color": "#9a4f4f", "scale": 1.1 }
 ```
+Add `"boss": true` (and `"weight": 0`) to make a Blood Moon boss: it never spawns normally, rises once per Blood Moon, shows a name tag and marker, and drops a rare-parts crate when killed. Zombies find their own way around your arena's boxes and jump onto anything up to 1.3 m high, so no navigation data is needed.
 
 ## Towns and shops
 - **Town:** `size`, `boxes` (static props and walls), `plots` (`x`, `y`, `rot` in 0/90/180/270), `gates` (where customers come from), `plaza`, plus colours (`groundColor`, `skyColor`, `fogColor`, `lightColor`, `ambient`) and `roads` (decoration).

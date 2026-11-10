@@ -80,6 +80,23 @@ class Hud:
         self.hunger_text = T(self.bl, (0.07, 0.295), 0.028, MUTED, TextNode.ALeft)
         self.energy_text = T(self.bl, (0.34, 0.295), 0.028, MUTED, TextNode.ALeft)
         self.zone = T(self.tl, (0.04, -0.13), 0.045, GOOD, TextNode.ALeft)
+        # "NEXT" guide box
+        self.guide_bg = DirectFrame(parent=self.tl, frameColor=(0, 0, 0, 0.42), frameSize=(0.025, 0.93, -0.47, -0.17))
+        self.guide_head = T(self.tl, (0.045, -0.215), 0.036, GOLD, TextNode.ALeft)
+        self.guide_text = OnscreenText(text="", parent=self.tl, pos=(0.045, -0.262), scale=0.035, fg=WHITE, align=TextNode.ALeft,
+                                       font=f, shadow=(0, 0, 0, 0.85), mayChange=True, wordwrap=24.5)
+        self.guide_shown = None
+        self.guide_bg.hide()
+        # sprint stamina (only visible while it is not full)
+        self.stamina_bar = Bar(self.root, -0.13, -0.47, 0.26, 0.012, (0.95, 0.9, 0.45, 1))
+        self.stamina_bar.show(False)
+        self.stamina_on = False
+        # waypoint markers
+        self.markers = [T(self.root, (0, 0), 0.034, GOLD) for _ in range(6)]
+        self.marker_dots = [DirectFrame(parent=self.root, frameColor=(1, 1, 1, 0), frameSize=(-0.011, 0.011, -0.011, 0.011))
+                            for _ in range(6)]
+        for d in self.marker_dots:
+            d.setR(45)
         self.sleep_fade = DirectFrame(parent=self.root, frameColor=(0, 0, 0.02, 0), frameSize=(-3, 3, -1, 1))
         self.sleep_fade.setTransparency(TransparencyAttrib.MAlpha)
         self.sleep_text = T(self.root, (0, 0), 0.07, (0.8, 0.85, 1, 1))
@@ -104,10 +121,10 @@ class Hud:
         self.chat = []
         self.chat_texts = [T(self.bl, (0.05, 0.45 + i * 0.048), 0.036, WHITE, TextNode.ALeft) for i in range(8)]
         self.chat_entry = None
-        self.board = DirectFrame(parent=self.root, frameColor=(0.05, 0.06, 0.08, 0.9), frameSize=(-0.8, 0.8, -0.62, 0.62), pos=(0, 0, -0.1))
+        self.board = DirectFrame(parent=self.root, frameColor=(0.05, 0.06, 0.08, 0.9), frameSize=(-0.85, 0.85, -0.66, 0.62), pos=(0, 0, -0.1))
         self.board_title = T(self.board, (0, 0.5), 0.075, ACCENT)
-        self.board_lines = [T(self.board, (-0.7, 0.36 - i * 0.075), 0.048, WHITE, TextNode.ALeft) for i in range(9)]
-        self.board_cols = [T(self.board, (0.7, 0.36 - i * 0.075), 0.048, WHITE, TextNode.ARight) for i in range(9)]
+        self.board_lines = [T(self.board, (-0.78, 0.38 - i * 0.066), 0.044, WHITE, TextNode.ALeft) for i in range(15)]
+        self.board_cols = [T(self.board, (0.78, 0.38 - i * 0.066), 0.044, WHITE, TextNode.ARight) for i in range(15)]
         self.board.hide()
 
     # ------------------------------------------------------------------ helpers
@@ -165,6 +182,40 @@ class Hud:
         target = 0.82 if sleeping else 0.0
         self.sleep_fade["frameColor"] = (0, 0, 0.02, c[3] + (target - c[3]) * 0.08)
         self.sleep_text.setText(f"Sleeping...  energy {int(energy)}%" + chr(10) + "(press E to wake up)" if sleeping else "")
+
+    def set_guide(self, head, body):
+        if (head, body) == self.guide_shown:
+            return
+        self.guide_shown = (head, body)
+        self.guide_head.setText(head)
+        self.guide_text.setText(body)
+        if body:
+            lines = max(1, len(body) // 44 + 1)
+            self.guide_bg["frameSize"] = (0.025, 0.93, -0.275 - lines * 0.04, -0.17)
+            self.guide_bg.show()
+        else:
+            self.guide_bg.hide()
+
+    def set_stamina(self, st):
+        on = st < 99.5
+        if on != self.stamina_on:
+            self.stamina_on = on
+            self.stamina_bar.show(on)
+        if on:
+            self.stamina_bar.set(st / 100.0, (0.95, 0.9, 0.45, 1) if st > 25 else BAD)
+
+    def set_markers(self, items):
+        for i, (t, d) in enumerate(zip(self.markers, self.marker_dots)):
+            if i < len(items):
+                x, y, label, color = items[i]
+                t.setText(label)
+                t.setFg(color)
+                t.setPos(x, y + 0.03)
+                d["frameColor"] = (color[0], color[1], color[2], 0.9)
+                d.setPos(x, 0, y)
+            else:
+                t.setText("")
+                d["frameColor"] = (1, 1, 1, 0)
 
     def show_combat(self, on):
         for w in (self.hp_label, self.hp_text, self.ammo, self.ammo_sub):

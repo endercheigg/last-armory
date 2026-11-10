@@ -16,8 +16,9 @@ import time
 from . import PROTOCOL, VERSION
 from .content import client_payload, load_content
 from .gun import SLOTS, auto_name, compute_stats, gun_value, validate
-from .sim import (BASE_SPEED, BODY_H, BODY_R, EYE_H, HEAD_R, HEAD_Z, LEG_Z, aim_vec, box_tuple, line_of_sight,
+from .sim import (STEP_H, SPRINT_DRAIN, SPRINT_MUL, SPRINT_REGEN, BASE_SPEED, BODY_H, BODY_R, EYE_H, HEAD_R, HEAD_Z, LEG_Z, aim_vec, box_tuple, line_of_sight,
                   move_player, ray_box, ray_cylinder, ray_sphere, ray_world, spread_dir)
+from .nav import FAR, NavGrid
 from .town import arena_boxes, build_town
 
 TICK = 30
@@ -41,6 +42,7 @@ DEFAULT_CONFIG = {
     "bloodMoonEvery": 3,
     "contracts": 2,
     "supplierPerSlot": 4,
+    "rejoinMinutes": 5,
     "town": "",
     "outside": "",
     "disabledMods": [],
@@ -112,6 +114,10 @@ class Player(Body):
         self.clean = None
         self.kills = self.zkills = 0
         self.earned = 0
+        self.sold = self.jobs_done = self.contracts_done = self.drops = 0
+        self.stamina = 100.0
+        self.sprinting = False
+        self.sprint_rest = 0.0
         self.ammo = 0
         self.reload_until = 0.0
         self.jammed = False
@@ -144,6 +150,9 @@ class Zombie(Body):
         self.next_hit = 0.0
         self.stuck = 0.0
         self.last = None
+        self.boss = bool(ztype.get("boss"))
+        self.detour = 0.0
+        self.swing = 0.0
 
 
 class Api:
@@ -239,6 +248,10 @@ class Game:
         self.loot_t = 0.0
         self.winner_id = 0
         self.contracts = []
+        self.ghosts = {}            # name -> (player, time left): disconnected players can rejoin and keep their shop
+        self.awards = []
+        self.fields = {}            # player id -> (time, cell, flow field) for zombie pathfinding
+        self.boss_at = 0.0
         self.next_contract = 1
         self.drop_t = 0.0
         self.blood = False
@@ -257,6 +270,7 @@ class Game:
         self.targets = self.world["targets"]
         self.outside = c["arenas"].get(self.config.get("outside") or "") or next(iter(c["arenas"].values()))
         self.out_boxes = [box_tuple(b) for b in arena_boxes(self.outside)]
+        self.nav = NavGrid(self.outside["size"], self.out_boxes)
         self.start_kit = {p["slot"]: p["id"] for p in c["parts"].values() if p["start"]}
         log(f"Loaded {len(c['mods'])} mod(s): " + ", ".join(f"{m['name']} {m['version']}" for m in c["mods"]))
         log(f"{len(c['parts'])} parts, {len(c['items'])} items, {len(c['upgrades'])} upgrades, "
@@ -361,13 +375,47 @@ class Game:
         return len(self.outside_players()) >= self.config["pvpMinPlayers"]
 
     # ------------------------------------------------------------ players
+    def prune_ghosts(self):
+        now = time.monotonic()
+        for k in [k for k, (_, until) in self.ghosts.items() if now > until]:
+            del self.ghosts[k]
+
+    def rejoin(self, name, writer):
+        """A player who dropped out of a running game gets their shop, cash and guns back."""
+        self.prune_ghosts()
+        g = self.ghosts.pop(name.lower(), None)
+        if not g or self.phase != "game" or any(o.plot == g[0].plot or o.id == g[0].id for o in self.players.values()):
+            return None
+        p = g[0]
+        p.writer = writer
+        p.moves.clear()
+        p.clean = None
+        p.sleeping = False
+        p.inp = {"fire": 0, "clicks": 0, "reload": 0, "ads": 0, "melee": 0}
+        p.clicks_used = p.melee_used = 0
+        p.ack = 0
+        p.alive = True
+        p.hp = max(p.hp, 50.0)
+        p.respawn_at = 0.0
+        p.inv_dirty = True
+        self.players[p.id] = p
+        self.dirty = True
+        return p
+
     def add_player(self, name, writer=None):
         p = Player(self.next_id, name, writer)
         self.next_id += 1
         used_c = {o.color for o in self.players.values()}
         p.color = next((c for c in range(8) if c not in used_c), p.id % 8)
+        self.prune_ghosts()
         used_p = {o.plot for o in self.players.values()}
-        p.plot = next((i for i in range(len(self.world["plots"])) if i not in used_p), 0)
+        held = {g[0].plot for g in self.ghosts.values()}
+        n_plots = len(self.world["plots"])
+        p.plot = next((i for i in range(n_plots) if i not in used_p and i not in held), None)
+        if p.plot is None:          # town is full of reserved shops: the longest-gone player loses theirs
+            p.plot = next((i for i in range(n_plots) if i not in used_p), 0)
+            for k in [k for k, g in self.ghosts.items() if g[0].plot == p.plot]:
+                del self.ghosts[k]
         self.players[p.id] = p
         self.reset_player(p)
         if self.phase == "game":
@@ -389,6 +437,8 @@ class Game:
         p.shelf = [None] * len(self.world["shop"]["shelves"])
         p.upgrades = {}
         p.kills = p.zkills = p.earned = 0
+        p.sold = p.jobs_done = p.contracts_done = p.drops = 0
+        p.stamina = 100.0
         p.hunger = p.energy = 100.0
         p.armor = 0.0
         p.inv_dirty = True
@@ -404,6 +454,14 @@ class Game:
     def remove_player(self, p):
         if self.players.pop(p.id, None):
             self.dirty = True
+            self.fields.pop(p.id, None)
+            if p.clean and p.clean.get("job"):
+                self.end_job(p, False)
+            mins = float(self.config.get("rejoinMinutes", 5))
+            if self.phase == "game" and mins > 0:
+                p.writer = None
+                p.zone = "town"
+                self.ghosts[p.name.lower()] = (p, time.monotonic() + mins * 60)
             for c in list(self.customers.values()):
                 if c["plot"] == p.plot:
                     self.customer_leave(c, "Shop closed")
@@ -453,6 +511,7 @@ class Game:
         m = {"t": "phase", "phase": self.phase, "day": self.day, "left": round(max(0, self.phase_end - now), 1)}
         if self.phase == "results":
             m["winner"] = self.winner_id
+            m["awards"] = self.awards
         return m
 
     def set_phase(self, ph, dur):
@@ -474,6 +533,9 @@ class Game:
         return day, frac, night
 
     def start_game(self):
+        self.ghosts.clear()
+        self.awards = []
+        self.fields.clear()
         self.day = 1
         self.is_night = False
         self.game_start = time.monotonic()
@@ -506,6 +568,7 @@ class Game:
         every = int(self.config.get("bloodMoonEvery", 3))
         self.blood = bool(every) and (self.day % every == 0 or self.day == self.config["days"])
         self.hook("on_night_start", self.day)
+        self.boss_at = time.monotonic() + 20 if self.blood else 0.0
         if self.blood:
             self.chat_all("BLOOD MOON! Zombies swarm the wasteland - double bounty on every kill tonight.", "#ff4a3a")
         else:
@@ -516,6 +579,13 @@ class Game:
     def end_game(self):
         best = max(self.players.values(), key=lambda p: p.cash, default=None)
         self.winner_id = best.id if best else 0
+        self.awards = []
+        for title, attr, unit in (("Top Salesman", "sold", "guns sold"), ("Zombie Slayer", "zkills", "zombies killed"),
+                                  ("Gunslinger", "kills", "players shot"), ("Master Cleaner", "jobs_done", "guns cleaned"),
+                                  ("Contractor", "contracts_done", "special orders"), ("Drop Hunter", "drops", "supply drops")):
+            top = max(self.players.values(), key=lambda p: getattr(p, attr), default=None)
+            if top and getattr(top, attr) > 0:
+                self.awards.append({"title": title, "name": top.name, "value": f"{getattr(top, attr)} {unit}"})
         if best:
             self.chat_all(f"{best.name} is the richest gunsmith with ${best.cash}!", "#ffb347")
         self.hook("on_match_end", best)
@@ -590,6 +660,7 @@ class Game:
         p.held = p.guns[0]["id"]
         self.restat(p)
         c["done"] = p.name
+        p.contracts_done += 1
         self.give_cash(p, c["reward"], f"Contract: {c['title']}")
         self.chat_all(f"{p.name} filled '{c['title']}' for ${c['reward']}!", "#c08bff")
         self.hook("on_contract", p, c)
@@ -638,6 +709,7 @@ class Game:
                 p.items[iid] = p.items.get(iid, 0) + 1
                 got.append(self.content["items"][iid]["name"])
         self.send(p, {"t": "toast", "msg": "Supply drop: " + ", ".join(got), "bad": 0})
+        p.drops += 1
         self.chat_all(f"{p.name} grabbed the supply drop!", "#ff9a3a")
         p.inv_dirty = True
 
@@ -1028,6 +1100,7 @@ class Game:
                       "target": c["job"]["target"]})
         if success:
             pay = c["job"]["pay"]
+            p.jobs_done += 1
             self.give_cash(p, pay, f"Cleaned {c['name']}'s gun")
             self.customer_leave(c, "Good as new! Thanks!", True)
             self.hook("on_service", p, c, True)
@@ -1076,6 +1149,7 @@ class Game:
         owner.shelf[slot] = None
         owner.inv_dirty = True
         over = item["price"] > c["budget"]
+        owner.sold += 1
         self.give_cash(owner, item["price"], f"Sold {item['gun']['name']} to {c['name']}")
         self.events.append({"t": "sale", "seller": owner.id, "buyer": c["name"], "gun": item["gun"]["name"], "price": item["price"]})
         self.hook("on_sale", owner, c["name"], item["gun"], item["price"])
@@ -1185,7 +1259,7 @@ class Game:
                 p.jammed = False
             return
         wants = p.inp["fire"] if st["auto"] else p.inp["clicks"] > p.clicks_used
-        if not wants:
+        if not wants or p.sprinting:       # no shooting mid-sprint
             return
         p.clicks_used = p.inp["clicks"]
         p.next_shot = now + 1.0 / st["fireRate"]
@@ -1311,6 +1385,12 @@ class Game:
                     attacker.zkills += 1
                     reward = victim.type.get("reward", 15) * (2.0 if self.blood else (1.5 if self.is_night else 1.0))
                     self.give_cash(attacker, reward, f"{victim.type.get('name', 'Zombie')} killed")
+                    if victim.boss:
+                        self.chat_all(f"{attacker.name} killed {victim.type.get('name', 'the Butcher')}! It dropped a crate of rare parts.", "#ffb347")
+                        b = {"id": self.next_loot, "pos": [round(victim.s["x"], 2), round(victim.s["y"], 2), 0], "drop": True,
+                             "land": time.monotonic(), "expire": time.monotonic() + 120}
+                        self.next_loot += 1
+                        self.loot[b["id"]] = b
                     self.hook("on_zombie_kill", victim, attacker)
                 self.events.append({"t": "zdead", "id": victim.id})
             return
@@ -1361,7 +1441,7 @@ class Game:
 
     # ------------------------------------------------------------ outside: zombies + loot
     def spawn_zombie(self, type_id=None, x=None, y=None):
-        types = [z for z in self.content["zombies"].values() if z.get("minDay", 1) <= max(1, self.day)] \
+        types = [z for z in self.content["zombies"].values() if z.get("minDay", 1) <= max(1, self.day) and not z.get("boss")] \
             or list(self.content["zombies"].values())
         if not types:
             return None
@@ -1385,6 +1465,8 @@ class Game:
         if not outs:
             if self.zombies and now - self.empty_since > 30:
                 self.zombies.clear()
+            if self.boss_at:
+                self.boss_at = max(self.boss_at, now + 8)
             return
         self.empty_since = now
         cap = (6 + 3 * len(outs) + self.day) * (2 if self.is_night else 1) * (1.5 if self.blood else 1)
@@ -1406,26 +1488,65 @@ class Game:
                 self.loot[b["id"]] = b
             self.loot_t = random.uniform(15, 30)
         size = self.outside["size"]
+        # the Butcher: one boss per Blood Moon
+        if self.blood and self.boss_at and now >= self.boss_at:
+            self.boss_at = 0.0
+            boss = next((z for z in self.content["zombies"].values() if z.get("boss")), None)
+            if boss:
+                self.spawn_zombie(boss["id"])
+                self.chat_all(f"{boss.get('name', 'THE BUTCHER').upper()} has risen in the wasteland. Bring it down for a fortune.", "#ff4a3a")
+                self.events.append({"t": "boss", "name": boss.get("name", "The Butcher")})
+        # flow fields: one flood-fill per player, refreshed when they move to another cell
+        alive = [p for p in outs if p.alive]
+        for p in alive:
+            cell = self.nav.cell_of(p.s["x"], p.s["y"])
+            f = self.fields.get(p.id)
+            if not f or (f[1] != cell and now - f[0] > 0.25) or now - f[0] > 3.0:
+                self.fields[p.id] = (now, cell, self.nav.field(p.s["x"], p.s["y"]))
+        for pid in [pid for pid in self.fields if all(p.id != pid for p in alive)]:
+            del self.fields[pid]
         for z in list(self.zombies.values()):
-            tgt = min(outs, key=lambda p: math.hypot(p.s["x"] - z.s["x"], p.s["y"] - z.s["y"]))
-            dx, dy = tgt.s["x"] - z.s["x"], tgt.s["y"] - z.s["y"]
+            if not alive:
+                break
+            zx, zy = z.s["x"], z.s["y"]
+
+            def walk_dist(p):
+                d = self.nav.distance(self.fields[p.id][2], zx, zy)
+                return d if d < FAR else 1000 + math.hypot(p.s["x"] - zx, p.s["y"] - zy)
+            tgt = min(alive, key=walk_dist)
+            dx, dy = tgt.s["x"] - zx, tgt.s["y"] - zy
             d = math.hypot(dx, dy)
-            z.h = math.degrees(math.atan2(-dx, dy))
-            if d < 1.25 and abs(tgt.s["z"] - z.s["z"]) < 1.6:
+            reach = 1.25 * (1.5 if z.boss else 1.0)
+            if d < reach and abs(tgt.s["z"] - z.s["z"]) < 1.6:
+                z.h = math.degrees(math.atan2(-dx, dy))
                 if now >= z.next_hit:
                     z.next_hit = now + 1.0
+                    z.swing = now
+                    self.events.append({"t": "zhit", "id": z.id})
                     self.apply_damage(tgt, z.type.get("damage", 12) * (1.3 if self.is_night else 1.0), z, "body")
                 continue
-            jump = 0
-            if z.last and math.hypot(z.s["x"] - z.last[0], z.s["y"] - z.last[1]) < 0.01:
+            # close and in plain sight: charge straight in. Otherwise follow the flow field around the walls.
+            direct = d < 9 and line_of_sight((zx, zy, 0.9), (tgt.s["x"], tgt.s["y"], tgt.s["z"] + 0.9), self.out_boxes)
+            v = None if direct else self.nav.direction(self.fields[tgt.id][2], zx, zy)
+            if now < z.detour:
+                pass                                   # keep the sidestep heading for a moment
+            elif v:
+                z.h = math.degrees(math.atan2(-v[0], v[1]))
+            else:
+                z.h = math.degrees(math.atan2(-dx, dy))
+            zspeed = z.type.get("speed", 3.0) * (1.15 if self.is_night else 1.0)
+            jump = 1 if (v and v[2] > z.s["z"] + STEP_H) else 0          # the way forward is up a ledge: hop onto it
+            if z.last and math.hypot(zx - z.last[0], zy - z.last[1]) < 0.3 * zspeed * DT:
                 z.stuck += DT
                 jump = 1
-                if z.stuck > 1.5:
-                    z.h += random.choice((-70, 70))
+                if z.stuck > 1.0 and now >= z.detour:
+                    z.h += random.choice((-80, 80))
+                    z.detour = now + 0.6
+                    z.stuck = 0
             else:
                 z.stuck = 0
-            z.last = (z.s["x"], z.s["y"])
-            move_player(z.s, 1, 0, jump, z.h, z.type.get("speed", 3.0) * (1.15 if self.is_night else 1.0), DT, self.out_boxes, size)
+            z.last = (zx, zy)
+            move_player(z.s, 1, 0, jump, z.h, zspeed, DT, self.out_boxes, size)
 
     # ------------------------------------------------------------ survival + movement
     def survival_tick(self, p, now):
@@ -1470,16 +1591,26 @@ class Game:
             speed = BASE_SPEED * p.stats["moveSpeed"] * p.speed_mul * tired
             if len(p.moves) > 4:
                 del p.moves[:len(p.moves) - 2]
+            sprint = False
             if p.moves:
-                seq, fwd, strafe, jump, h = p.moves.pop(0)
+                seq, fwd, strafe, jump, h, sp = p.moves.pop(0)
                 p.ack = seq
                 if p.sleeping:
                     fwd = strafe = jump = 0
-                move_player(p.s, fwd, strafe, jump, h, speed, DT, boxes, size)
+                sprint = bool(sp and fwd > 0 and p.stamina > 0)
+                move_player(p.s, fwd, strafe, jump, h, speed * (SPRINT_MUL if sprint else 1.0), DT, boxes, size)
                 p.moving = bool(fwd or strafe)
             else:
                 move_player(p.s, 0, 0, 0, p.h, speed, DT, boxes, size)
                 p.moving = False
+            p.sprinting = sprint
+            if sprint:
+                p.stamina = max(0.0, p.stamina - SPRINT_DRAIN * DT)
+                p.sprint_rest = 0.8
+            else:
+                p.sprint_rest = max(0.0, p.sprint_rest - DT)
+                if p.sprint_rest <= 0:
+                    p.stamina = min(100.0, p.stamina + SPRINT_REGEN * (0.5 if p.energy < 25 else 1.0) * DT)
             p.bloom = max(0.0, p.bloom - 8 * DT)
             if p.reload_until and now >= p.reload_until:
                 p.reload_until = 0.0
@@ -1495,6 +1626,12 @@ class Game:
     def tick(self):
         now = time.monotonic()
         ph = self.phase
+        if ph == "game" and not self.players:
+            self.prune_ghosts()
+            if self.ghosts:          # everyone dropped out: freeze the clock until someone rejoins (or the wait runs out)
+                self.game_start += DT
+                self.phase_end += DT
+                return
         if ph == "lobby":
             if self.players:
                 if not self.phase_end:
@@ -1575,7 +1712,7 @@ class Game:
                   "spd": round(BASE_SPEED * p.stats["moveSpeed"] * p.speed_mul * (0.6 if p.energy <= 0 else (0.8 if p.energy < 25 else 1.0)), 3),
                   "vz": round(p.s["vz"], 3), "gr": 1 if p.s["ground"] else 0, "hp": math.ceil(p.hp),
                   "ar": math.ceil(p.armor), "hu": round(p.hunger, 1), "en": round(p.energy, 1),
-                  "sl": 1 if p.sleeping else 0, "jam": 1 if p.jammed else 0, "zone": p.zone,
+                  "sl": 1 if p.sleeping else 0, "jam": 1 if p.jammed else 0, "zone": p.zone, "st": round(p.stamina, 1),
                   "resp": round(max(0, p.respawn_at - now), 1) if not p.alive else 0}
             msg = {"t": "s", "ph": "game", "zone": p.zone, "p": rows[p.zone], "me": me, "left": left,
                    "day": day, "tod": round(frac, 4), "night": 1 if night else 0, "pvp": 1 if pvp else 0,
@@ -1627,7 +1764,7 @@ class Game:
             if isinstance(seq, int) and len(p.moves) < 20:
                 fwd = max(-1, min(1, int(m.get("mf", 0))))
                 strafe = max(-1, min(1, int(m.get("ms", 0))))
-                p.moves.append((seq, fwd, strafe, 1 if m.get("j") else 0, p.h))
+                p.moves.append((seq, fwd, strafe, 1 if m.get("j") else 0, p.h, 1 if m.get("sp") else 0))
         elif t == "act":
             self.act(p, m)
         elif t == "chat":
@@ -1733,14 +1870,17 @@ async def serve(root, config):
                 await writer.drain()
                 return
             name = "".join(ch for ch in str(hello.get("name", "Player")) if ch.isprintable())[:16].strip() or "Player"
-            taken = {p.name for p in game.players.values()}
-            base, n = name, 2
-            while name in taken:
-                name, n = f"{base}{n}", n + 1
-            player = game.add_player(name, writer)
+            player = game.rejoin(name, writer)
+            back = player is not None
+            if not back:
+                taken = {p.name for p in game.players.values()} | {g[0].name for g in game.ghosts.values()}
+                base, n = name, 2
+                while name in taken:
+                    name, n = f"{base}{n}", n + 1
+                player = game.add_player(name, writer)
             game.send(player, game.welcome(player))
             game.place_in_shop(player)
-            game.chat_all(f"{name} opened a shop in town")
+            game.chat_all(f"{name} is back - their shop reopens" if back else f"{name} opened a shop in town")
             log(f"{name} joined from {peer[0] if peer else '?'}")
             game.hook("on_player_join", player)
             if config["motd"]:
@@ -1754,7 +1894,10 @@ async def serve(root, config):
                 except json.JSONDecodeError:
                     continue
                 if isinstance(m, dict):
-                    game.handle(player, m)
+                    try:
+                        game.handle(player, m)
+                    except Exception as e:       # a malformed or hostile packet must never hurt the server
+                        log(f"bad message from {player.name}: {e!r}")
         except (asyncio.TimeoutError, ConnectionError, json.JSONDecodeError, OSError):
             pass
         finally:

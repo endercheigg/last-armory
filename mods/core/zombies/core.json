@@ -34,5 +34,18 @@
   "color": "#4e6b5f",
   "scale": 1.35,
   "mesh": "zombies/chubby"
+ },
+ {
+  "id": "butcher",
+  "name": "The Butcher",
+  "hp": 1400,
+  "speed": 3.3,
+  "damage": 34,
+  "reward": 400,
+  "weight": 0,
+  "boss": true,
+  "scale": 1.55,
+  "color": "#7a2a2a",
+  "minDay": 99
  }
 ]

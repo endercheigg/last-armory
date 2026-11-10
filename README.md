@@ -4,6 +4,9 @@
 
 A first-person, multiplayer gunsmith game set in a zombie-apocalypse outpost. There are no bots: just you, your friends, the townspeople and the dead.
 
+### New here?
+A **NEXT** box in the top-left walks you through your first day (buy parts, build, shelve, sell, visit the plaza, go outside) and a gold waypoint marker points at where to go. After that it only speaks up when it matters: low health, hunger, a filthy gun, a client waiting. Press **F1** for the full how-to-play screen.
+
 ### Your gun shop (the town is a safe zone)
 - Every player owns a shop on the same town square.
 - **Supplier terminal:** 4 different parts in every category (receiver, barrel, magazine, stock, grip, scope, muzzle, bayonet), Common to Legendary, each with a spinning 3D preview and its stats. **The stock changes every time you walk to the middle of town and come back.**
@@ -25,19 +28,24 @@ A first-person, multiplayer gunsmith game set in a zombie-apocalypse outpost. Th
 
 ### Outside (zombies + PvP)
 Walk to a town gate to go out into the wasteland.
-- Zombies roam there all the time, with more and tougher ones at night. Kills pay cash.
+- Zombies roam there all the time, with more and tougher ones at night. Kills pay cash. They path around walls and jump onto ledges, so standing on a crate won't save you. Health bars and damage numbers show how a fight is going.
 - Supply crates hold parts, cash and items.
 - **Supply drops:** every few minutes a crate parachutes into the wasteland, marked by an orange smoke beam you can see from anywhere. It holds 2 rare parts, cash, a heavy shield and a medkit. Everyone is told when one falls, so expect a fight over it.
-- **Blood Moon:** every 3rd night (and the last night) the sky turns red, zombies swarm in far greater numbers, and every zombie kill pays double.
+- **Blood Moon:** every 3rd night (and the last night) the sky turns red, zombies swarm in far greater numbers, and every zombie kill pays double. **The Butcher**, a huge boss zombie, rises about 20 seconds in: it pays $800 and drops a crate of rare parts.
+- Waypoint markers point at the way back to town, falling supply drops and the Butcher.
 - **PvP is only on while 2 or more players are outside.** A kill loots 25% of the victim's cash.
 - Damage works like Valorant: you have 100 HP plus shields, and shields soak damage first. Rifles do 40 to the body and 160 to the head (a one-tap even through heavy shields); the revolver, marksman and railgun one-shot heads too, while pistols and SMGs need more hits. Legs take 85%.
 
-A day lasts 6 minutes plus a 3-minute night, and there are no customers at night. After the last day (5 by default), **the richest gunsmith wins.**
+A day lasts 6 minutes plus a 3-minute night, and there are no customers at night. The sun crosses the sky and sets, then the moon and stars come out. After the last day (5 by default), **the richest gunsmith wins**, and the results screen hands out awards (Top Salesman, Zombie Slayer, Gunslinger, Master Cleaner, Contractor, Drop Hunter).
+
+**Lost connection?** Rejoin with the same name within 5 minutes and you get your shop, cash, parts and guns back. If everyone drops out, the game pauses until someone returns.
 
 ## Controls
 | | |
 |---|---|
 | WASD / Space | move / jump |
+| Shift | sprint (uses stamina; you can't shoot mid-sprint) |
+| F1 | how-to-play screen |
 | Mouse | look, left click shoot, right click aim |
 | E | use (workbench, supplier, cleaning bench, bed, shelves, stalls, gates, crates) |
 | I | inventory |
@@ -82,6 +90,7 @@ python3 LastArmory.py
 | bloodMoonEvery | 3 | every Nth night is a Blood Moon, plus the last night (0 = off) |
 | contracts | 2 | Collector special orders posted each morning |
 | supplierPerSlot | 4 | different parts the supplier offers per category |
+| rejoinMinutes | 5 | how long a disconnected player's shop is kept for them (0 = off) |
 | days | 5 | |
 | dayMinutes / nightMinutes | 6 / 3 | |
 | outside | "" | wasteland arena id |

@@ -10,6 +10,7 @@ from ..town import build_town
 from . import hud as H
 from .geom import hexc
 from .world import LobbyView, OutsideView, TownView, key_down
+from .guide import Guide
 from . import panels as P
 
 
@@ -48,7 +49,10 @@ class Match:
         self.blood = False
         self.contracts = []
         self.jobs = []
+        self.awards = []
+        self.guide = Guide(self)
         self.me_state = {}
+        app.accept("f1", self.toggle_help)
         app.accept("escape", self.on_escape)
         app.accept("i", self.open_inventory)
         app.accept("h", self.quick_use, ["heal"])
@@ -148,6 +152,14 @@ class Match:
         if self.view and hasattr(self.view, "interact"):
             self.view.interact()
 
+    def toggle_help(self):
+        if self.chat_open or self.menu_open or (self.panel and self.panel.typing):
+            return
+        if isinstance(self.panel, P.HelpPanel):
+            self.close_panel()
+        else:
+            self.open_panel(P.HelpPanel(self))
+
     def open_inventory(self):
         if self.chat_open or self.menu_open or (self.panel and self.panel.typing):
             return
@@ -222,7 +234,12 @@ class Match:
                          frameColor=((0.2, 0.22, 0.26, 1), (0.3, 0.33, 0.38, 1), (0.3, 0.33, 0.38, 1), (0.1, 0.1, 0.1, 1)),
                          relief=DGG.FLAT, frameSize=(-3.6, 3.6, -0.6, 1.0), pressEffect=0)
         btn("Resume", 0.26, self.close_menu)
-        btn("Leave game", 0.12, lambda: self.leave(None))
+
+        def show_help():
+            self.close_menu()
+            self.open_panel(P.HelpPanel(self))
+        btn("How to play (F1)", 0.12, show_help)
+        btn("Leave game", -0.5, lambda: self.leave(None))
 
         def slider(label, y, lo, hi, key, fmt):
             t = OnscreenText(parent=fr, text="", pos=(-0.5, y - 0.015), scale=0.042, fg=H.WHITE, align=TextNode.ALeft, font=f, mayChange=True)
@@ -236,11 +253,11 @@ class Match:
             s = DirectSlider(parent=fr, range=(lo, hi), value=app.settings[key], pos=(0.22, 0, y), scale=0.3, command=changed,
                              frameColor=(0.2, 0.22, 0.26, 1), thumb_frameColor=H.ACCENT)
             changed()
-        slider("Mouse", -0.06, 0.02, 0.5, "sens", lambda v: f"{v:.2f}")
-        slider("FOV", -0.18, 60, 110, "fov", lambda v: f"{v:.0f}")
-        slider("Volume", -0.3, 0, 1, "volume", lambda v: f"{v * 100:.0f}%")
-        OnscreenText(parent=fr, text="Mods: " + ", ".join(m["name"] for m in self.content.get("mods", [])), pos=(0, -0.48),
-                     scale=0.035, fg=H.MUTED, font=f, wordwrap=30)
+        slider("Mouse", -0.04, 0.02, 0.5, "sens", lambda v: f"{v:.2f}")
+        slider("FOV", -0.15, 60, 110, "fov", lambda v: f"{v:.0f}")
+        slider("Volume", -0.26, 0, 1, "volume", lambda v: f"{v * 100:.0f}%")
+        OnscreenText(parent=fr, text="Mods: " + ", ".join(m["name"] for m in self.content.get("mods", [])), pos=(0, -0.36),
+                     scale=0.032, fg=H.MUTED, font=f, wordwrap=34)
         self.menu = fr
 
     def close_menu(self):
@@ -267,7 +284,11 @@ class Match:
                 self.is_night = bool(m.get("night"))
                 self.pvp = bool(m.get("pvp"))
                 self.out_count = m.get("out", 0)
-                self.blood = bool(m.get("bm"))
+                blood = bool(m.get("bm"))
+                if blood and not self.blood:
+                    self.hud.flash_big("BLOOD MOON", "Zombies swarm outside - every kill pays double", H.BAD, 4)
+                    self.app.sounds.play("stinger", 0.9)
+                self.blood = blood
                 self.me_state = m.get("me", {})
                 self.ensure_zone(m.get("zone", "town"))
                 v = self.view
@@ -285,13 +306,23 @@ class Match:
             self.set_phase(m)
         elif t == "cash":
             if m["p"] == self.me:
+                if str(m.get("why", "")).startswith("Cleaned "):
+                    self.guide.mark("job")
                 self.hud.money(m["n"], m["why"])
                 if m["n"] > 0:
                     self.app.sounds.play("cash", 0.7)
+        elif t == "boss":
+            self.hud.flash_big(m.get("name", "THE BUTCHER").upper(), "has risen in the wasteland", H.BAD, 3.5)
+            self.app.sounds.play("stinger", 0.9, 0.8)
+        elif t == "zhit":
+            if isinstance(v, OutsideView):
+                v.on_zhit(m)
         elif t == "sale":
             if m["seller"] == self.me:
+                self.guide.mark("sold")
                 self.hud.show_toast(f"{m['buyer']} bought your {m['gun']} for ${m['price']}!", bad=False, dur=3)
         elif t == "crafted" and m["p"] == self.me:
+            self.guide.mark("built")
             if self.panel and type(self.panel).__name__ == "WorkbenchPanel":
                 self.panel.reset()
             self.hud.show_toast(f"Assembled: {m['gun']['name']}  (worth ${m['gun']['value']})", bad=False)
@@ -391,6 +422,7 @@ class Match:
                 self.hud.flash_big("LAST ARMORY", "Build guns. Sell guns. Survive outside.", H.GOLD, 3)
                 self.app.sounds.play("go", 0.6)
         elif ph == "results":
+            self.awards = m.get("awards", [])
             w = m.get("winner")
             self.hud.flash_big(f"{self.name(w).upper()} WINS!" if w else "GAME OVER", "Richest gunsmith in town", H.GOLD, 14, y=0.62)
             self.app.sounds.play("win", 0.8)
@@ -433,6 +465,10 @@ class Match:
         for p in sorted(self.infos.values(), key=lambda p: -p["cash"]):
             col = H.ACCENT if p["id"] == self.me else H.WHITE
             rows.append((p["name"], f"${p['cash']:,}    {p['kills']} kills   {p['zkills']} zombies", col))
+        if self.phase == "results" and self.awards:
+            rows.append(("", "", H.WHITE))
+            for aw in self.awards[:15 - len(rows)]:
+                rows.append((f"{aw['title']}:  {aw['name']}", aw["value"], H.GOLD))
         self.hud.show_board(title, rows)
 
     # ---------------------------------------------------------------- frame
@@ -475,6 +511,8 @@ class Match:
         elif ph == "results":
             self.hud.title.setText("FINAL RESULTS")
             self.hud.sub.setText("")
+        head, body = self.guide.update() if (ph == "game" and not self.panel and not self.menu_open) else ("", "")
+        self.hud.set_guide(head, body)
         self.hud.set_cash(self.cash())
         self.hud.set_hotbar(self.inv.get("guns", []), self.inv.get("held"))
         tab = key_down(self.app, "tab") and not self.chat_open
@@ -488,7 +526,7 @@ class Match:
 
     def destroy(self):
         self.set_capture(False)
-        for k in ["escape", "enter", "t", "e", "i", "h", "g"] + [str(i + 1) for i in range(6)]:
+        for k in ["escape", "enter", "t", "e", "i", "h", "g", "f1"] + [str(i + 1) for i in range(6)]:
             self.app.ignore(k)
         self.close_panel()
         self.close_menu()

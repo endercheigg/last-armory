@@ -12,6 +12,9 @@ PLAYER_H = 1.92      # realistic adult height (taller characters)
 EYE_H = 1.70
 BASE_SPEED = 6.5
 STEP_H = 0.55
+SPRINT_MUL = 1.4     # hold Shift while moving forward
+SPRINT_DRAIN = 22.0  # stamina per second (100 = about 4.5 s of sprinting)
+SPRINT_REGEN = 16.0  # per second, after a short rest
 BODY_R = 0.34
 BODY_H = 1.56
 HEAD_Z = 1.68

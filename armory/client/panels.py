@@ -999,3 +999,36 @@ class ServicePanel(CleaningPanel):
         super().on_server(msg)
         if not self.active:
             self.shown_job = None
+
+
+class HelpPanel(Panel):
+    """F1: what to do and which keys do it."""
+    title = "HOW TO PLAY"
+    refresh_on_players = False
+
+    def build(self):
+        left = [
+            ("GOAL", "Be the richest gunsmith in town when the last day ends."),
+            ("1. BUY", "Supplier terminal (computer desk): 4 parts per category. It restocks each time you visit the plaza."),
+            ("2. BUILD", "Workbench: receiver + barrel + magazine (+ extras). Tighten every screw, then FINISH GUN."),
+            ("3. SELL", "Shelves by your door: set a price. A gun that matches what a customer wants always sells, even overpriced."),
+            ("4. SERVICE", "Service window (left of the door): scrub clients' dirty guns to their target for quick cash."),
+            ("5. SURVIVE", "Eat (G), heal (H), sleep in your bed at night. Dirty guns jam: clean them at the cleaning bench."),
+            ("6. OUTSIDE", "Town gates lead to the wasteland: zombies pay cash, crates and supply drops hold parts."),
+            ("PVP", "Only while 2+ players are outside. A kill loots 25% of the victim's cash. Rifles one-tap heads."),
+            ("EVENTS", "Collector's orders (plaza), supply drops (orange beam), Blood Moon every 3rd night with the Butcher."),
+        ]
+        y = 0.62
+        for head, body in left:
+            self.text(head, (-1.19, y), 0.036, H.GOLD)
+            self.text(body, (-0.88, y), 0.034, H.WHITE, wrap=36)
+            y -= 0.108 if len(body) > 58 else 0.076
+        keys = [("WASD", "move"), ("Shift", "sprint"), ("Space", "jump"), ("Mouse", "aim / fire"), ("Right click", "aim down sights"),
+                ("R", "reload / clear a jam"), ("F", "bayonet"), ("E", "use / talk"), ("1-6", "pick a gun"), ("I", "inventory"),
+                ("H / G", "heal / eat"), ("T or Enter", "chat"), ("Tab", "scores"), ("Esc", "menu"), ("F1", "this help")]
+        self.text("KEYS", (0.62, 0.62), 0.036, H.GOLD)
+        for i, (k, what) in enumerate(keys):
+            self.text(k, (0.62, 0.56 - i * 0.058), 0.034, H.ACCENT)
+            self.text(what, (0.9, 0.56 - i * 0.058), 0.032, H.WHITE)
+        self.text("If you lose connection, rejoin with the same name within 5 minutes to get your shop back.", (0, -0.76), 0.03,
+                  H.MUTED, TextNode.ACenter)

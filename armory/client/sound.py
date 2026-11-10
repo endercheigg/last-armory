@@ -51,6 +51,9 @@ RECIPES = {
     "craft": lambda: _noise(0.06, 60, 0.2, 500, vol=0.5) + [0.0] * 1500 + _noise(0.06, 60, 0.2, 400, vol=0.5) + [0.0] * 1500 + _tone(880, 0.2, 0.3, 10),
     "groan": lambda: _tone(110, 0.6, 0.35, 3, -40),
     "stab": lambda: _noise(0.08, 40, 0.3, 300, vol=0.6),
+    "step": lambda: _noise(0.07, 55, 0.82, 95, 45, vol=0.6),
+    "growl": lambda: [a + b for a, b in zip(_tone(95, 0.45, 0.4, 5, -30), _noise(0.45, 7, 0.9, vol=0.5))],
+    "stinger": lambda: [a + b for a, b in zip(_tone(110, 1.6, 0.45, 1.6, -25), _tone(116, 1.6, 0.4, 1.4, -22))],
     "win": lambda: _tone(523, 0.15, 0.3, 4) + _tone(659, 0.15, 0.3, 4) + _tone(784, 0.15, 0.3, 4) + _tone(1046, 0.5, 0.35, 3),
 }
 
